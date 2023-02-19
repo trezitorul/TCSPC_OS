@@ -1,4 +1,4 @@
-from GVS012GalvoScanner.GVS012Galvo import * 
+
 import dash
 from dash import html
 from dash import dcc
@@ -13,7 +13,10 @@ import math as m
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])  # remove "Updating..." from title
 
 
-Y = deque(maxlen=20)
+X = []
+Y = []
+length = []
+length.append(0)
 
 app.layout=dbc.Container([
     dbc.Row([
@@ -86,7 +89,11 @@ app.layout=dbc.Container([
         dbc.Col([
             dcc.Graph(id='graph',  style={'height': '100vh', 'width' : '100vh', 'margin-left' : '10%'},  clickData=None,
                       hoverData=None),
-            dcc.Interval(id="interval", disabled=True)
+            dcc.Interval(id="interval_hardware", interval=500, disabled=True),
+            dcc.Interval(id="interval_gui"),
+            html.Div(id='hidden-div', style={'display': 'none'}),
+            html.Div(id='nothing', style={'display': 'none'})
+
 
         ], width=8)
     ], justify='start')
@@ -136,15 +143,25 @@ def update_axis(click1, click2, spanx, spany, setx, sety):
                           yaxis=dict(range=[int(sety) - int(spany) /2 - 1, int(sety) + int(spany)/2 + 1])))
 
 @app.callback(Output('graph', 'extendData'),
-              [Input('interval', 'n_intervals'),
+              [
+                Input('interval_gui', 'n_intervals'),
+              ])
+def extend_data(n):
+    length.append(len(X))
+    print(X)
+    return dict(x=[X[0:]], y=[ Y[0:] ]) , [0], 1000
+
+
+@app.callback(Output('nothing', 'children'),
+              [Input('interval_hardware', 'n_intervals'),
                State('x_span', 'value'),
                State('y_span', 'value'),
                State('set_x', 'value'),
                State('set_y', 'value'),
                State('dx', 'value'),
                State('dy', 'value'),
-               State('interval', 'disabled')])
-def extend_data(n, spanx, spany, setx, sety, dx, dy, disabled):
+               ])
+def update_hardware(n, spanx, spany, setx, sety, dx, dy):
     if (float(dx) < 1):
         num_points_row =  int(int(spanx) // float(dx)) + 2
     else:
@@ -163,15 +180,16 @@ def extend_data(n, spanx, spany, setx, sety, dx, dy, disabled):
     else:
         x = int(setx) + int(spanx) / 2 - ((int(n)) % num_points_row) * float(dx)
 
+    X.append(x)
+    Y.append(y)
+    return 0
 
-    return dict(x=[[x]], y=[[y]]), [0], 1000,
-
-@app.callback(Output('interval', 'n_intervals'),
-              Output('interval', 'interval'),
-              Output('interval', 'disabled'),
+@app.callback(Output('interval_gui', 'n_intervals'),
+              Output('interval_gui', 'interval'),
+              Output('interval_gui', 'disabled'),
               [State('velocity', 'value'),
-               State('interval', 'n_intervals'),
-               State('interval', 'disabled'),
+               State('interval_gui', 'n_intervals'),
+               State('interval_gui', 'disabled'),
               Input('scan', 'n_clicks'),
                Input('go_to', 'n_clicks'),
                Input('stop', 'n_clicks')])
@@ -181,6 +199,26 @@ def restart_interval(vel, interval, disabled, scan, go_to, stop):
     elif 'stop' == ctx.triggered_id:
         if (disabled == True):
             return interval, (1 / int(vel)) * pow(10,6), False
+        else:
+            return interval, 0, True
+    else:
+        return 0, 0, True
+
+@app.callback(Output('interval_hardware', 'n_intervals'),
+              Output('interval_hardware', 'interval'),
+              Output('interval_hardware', 'disabled'),
+              [State('velocity', 'value'),
+               State('interval_hardware', 'n_intervals'),
+               State('interval_hardware', 'disabled'),
+              Input('scan', 'n_clicks'),
+               Input('go_to', 'n_clicks'),
+               Input('stop', 'n_clicks')])
+def restart_interval(vel, interval, disabled, scan, go_to, stop):
+    if 'scan' == ctx.triggered_id:
+        return 0, 500, False
+    elif 'stop' == ctx.triggered_id:
+        if (disabled == True):
+            return interval, 500, False
         else:
             return interval, 0, True
     else:
