@@ -13,17 +13,20 @@ import signal
 import matplotlib.pyplot as plt
 
 galvo = GVS012Galvo(ULRange.BIP10VOLTS,"single_ended")
-intergration_t = 0.1
-dx = 0.05
-dy = 0.05
-spanx = 2
-spany = 2
+intergration_t = 0.001 #Controls Integration Time
+dx = 0.005 #Step X resolution
+dy = 0.005 #Step Y resolution 
+spanx = 1 #Scan X Width
+spany = 1 #Scan Y Width
 n = 0
 tragx, tragy, x_axis, y_axis, counts = [],[],[], [], []
 nspanx=math.ceil(spanx/dx)
 nspany=math.ceil(spany/dy)
 x0=-1*spanx/2
 y0=-1*spany/2
+totalN=nspanx*nspany
+n=1
+t_left=0
 for i in range(nspanx):
     for j in range(nspany):
         galvo.setX(x0+dx*i)
@@ -36,7 +39,11 @@ for i in range(nspanx):
         x_axis.append(x)
         y_axis.append(y)
         counts.append(c)
-        print(x, y, c)
+        t_left_temp=int((totalN-n)*1.1*intergration_t)
+        if t_left_temp!=t_left:
+            t_left=t_left_temp
+            print(str(int(100*n/totalN))+"% Complete, expected time remaining: " + str(int(t_left))+"S")
+        n+=1
 
 tragx=np.round(tragx, decimals=4)
 tragy=np.round(tragy, decimals=4)
