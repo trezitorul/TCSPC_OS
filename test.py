@@ -90,7 +90,7 @@ app.layout=dbc.Container([
             dcc.Graph(id='graph',  style={'height': '100vh', 'width' : '100vh', 'margin-left' : '10%'},  clickData=None,
                       hoverData=None),
             dcc.Interval(id="interval_hardware", interval=500, disabled=True),
-            dcc.Interval(id="interval_gui"),
+            dcc.Interval(id="interval_gui", disabled=True),
             html.Div(id='hidden-div', style={'display': 'none'}),
             html.Div(id='nothing', style={'display': 'none'})
 
@@ -138,6 +138,7 @@ def update_axis(click1, click2, spanx, spany, setx, sety):
                     layout=dict(xaxis=dict(range=[int(spanx) * (-1), int(spanx)]),
                                 yaxis=dict(range=[int(spany) * (-1),  int(spany)])))
     else:
+
         return dict(data=[trace1, trace2],
               layout=dict(xaxis=dict(range=[int(setx) - int(spanx) /2 - 1, int(setx) + int(spanx)/2 + 1]),
                           yaxis=dict(range=[int(sety) - int(spany) /2 - 1, int(sety) + int(spany)/2 + 1])))
