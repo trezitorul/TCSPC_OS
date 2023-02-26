@@ -16,6 +16,7 @@ from scipy import signal
 import numpy as np
 from ctypes import *
 from System import Decimal
+import decimal
 sys.path.append(r"C:\\Program Files\\Thorlabs\\Kinesis")
 clr.AddReference("C:\\Program Files\\Thorlabs\\Kinesis\\Thorlabs.MotionControl.DeviceManagerCLI.dll")
 clr.AddReference("C:\\Program Files\\Thorlabs\\Kinesis\\Thorlabs.MotionControl.GenericMotorCLI.dll")
@@ -104,8 +105,8 @@ def main():
         time0 = time.time()
         for i in range(len(traj)):
             if (i % interval_pos == 0) :
-                channelX.SetPosition(Decimal(float(traj[i])))
-            temp_pos = Decimal.ToDouble(channelX.GetPosition())
+                channelX.SetPosition(decimal.Decimal(float(traj[i])))
+            temp_pos = decimal.Todouble(channelX.GetPosition())
             pos_list.append(temp_pos)
             temp_time = time.time() - time0
             print([temp_pos,temp_time])
