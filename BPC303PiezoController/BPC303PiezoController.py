@@ -95,3 +95,4 @@ class BPC303Piezo:
 if "name" == "__main__":
     deviceID = "71201654"
     Piezo = BPC303Piezo("CloseLoop",deviceID)
+    Piezo.SetX()
