@@ -14,10 +14,10 @@ import matplotlib.pyplot as plt
 
 galvo = GVS012Galvo(ULRange.BIP10VOLTS,"single_ended")
 intergration_t = 0.001 #Controls Integration Time
-dx = 0.005 #Step X resolution
-dy = 0.005 #Step Y resolution 
-spanx = 1 #Scan X Width
-spany = 1 #Scan Y Width
+dx = 0.002 #Step X resolution
+dy = 0.002 #Step Y resolution 
+spanx = 0.5 #Scan X Width
+spany = 0.5 #Scan Y Width
 n = 0
 tragx, tragy, x_axis, y_axis, counts = [],[],[], [], []
 nspanx=math.ceil(spanx/dx)
