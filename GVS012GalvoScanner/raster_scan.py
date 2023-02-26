@@ -1,4 +1,5 @@
 from GVS012Galvo import * 
+from BPC303PiezoController import BPC303PiezoController
 from mcculw import ul
 from mcculw.enums import CounterChannelType
 from mcculw.device_info import DaqDeviceInfo
@@ -11,7 +12,8 @@ import math
 import threading
 import signal
 import matplotlib.pyplot as plt
-
+piezoid = "71201654"
+piezo = BPC303PiezoController("CloseLoop",piezoid)
 galvo = GVS012Galvo(ULRange.BIP10VOLTS,"single_ended")
 intergration_t = 0.001 #Controls Integration Time
 dx = 0.002 #Step X resolution
