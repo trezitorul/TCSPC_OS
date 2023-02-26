@@ -46,9 +46,9 @@ class BPC303Piezo:
         return channel 
     
     def SetZero(self,channel):
-        initial_position = Decimal(0)
+        initial_position = decimal.Decimal(0)
         channel.SetPosition(initial_position)
-        initial_voltage = Decimal(0)
+        initial_voltage = decimal.Decimal(0)
         channel.SetOutputVoltage(initial_voltage)
         time.sleep(0.5)
     
@@ -69,6 +69,7 @@ class BPC303Piezo:
         channelZ = self.device.CreateChannel(3)
         self.SetMode(channelZ,self.mode)
         self.SetZero(channelZ)
+
         return [channelX,channelY,channelY]
 
     def SetX(self,position):
@@ -95,4 +96,5 @@ class BPC303Piezo:
 if "name" == "__main__":
     deviceID = "71201654"
     Piezo = BPC303Piezo("CloseLoop",deviceID)
-    Piezo.SetX()
+    Piezo.SetX(1)
+    print(Piezo.GetX())
