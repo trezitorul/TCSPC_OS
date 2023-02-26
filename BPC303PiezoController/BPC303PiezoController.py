@@ -7,8 +7,9 @@ import matplotlib.pyplot as plt
 from scipy import signal
 import numpy as np
 from ctypes import *
-#rom System import Decimal
+from System import Decimal
 import decimal
+#from decimal import Decimal
 sys.path.append(r"C:\\Program Files\\Thorlabs\\Kinesis")
 clr.AddReference("C:\\Program Files\\Thorlabs\\Kinesis\\Thorlabs.MotionControl.DeviceManagerCLI.dll")
 clr.AddReference("C:\\Program Files\\Thorlabs\\Kinesis\\Thorlabs.MotionControl.GenericMotorCLI.dll")
@@ -24,14 +25,13 @@ from Thorlabs.MotionControl.Benchtop.PiezoCLI import BenchtopPiezo
 class BPC303Piezo:
     def __init__(self,mode,deviceID):
         self.mode = mode
-        self.deviceID = deviceID
-        self.device = self.SetupDevice()
+        self.device = self.SetupDevice(deviceID)
         [self.channelX,self.channelY,self.channelZ] = self.InitializeAllchan()
     
-    def SetupDevice(self):
+    def SetupDevice(self,deviceID):
         DeviceManagerCLI.BuildDeviceList()
-        device =  BenchtopPiezo.CreateBenchtopPiezo(self.deviceID)
-        device.Connect(self.deviceID)
+        device =  BenchtopPiezo.CreateBenchtopPiezo(str(deviceID))
+        device.Connect(deviceID)
         return device 
 
     def CreateChannel(self,chan_no):
@@ -40,17 +40,17 @@ class BPC303Piezo:
             channel.WaitForSettingsInitialized(10000)  
             assert channel.IsSettingsInitialized() is True
         channel.StartPolling(1)
-        time.sleep(0.5)
+        time.sleep(0.2)
         channel.EnableDevice()
-        time.sleep(0.25)
+        time.sleep(0.2)
         return channel 
     
     def SetZero(self,channel):
-        initial_position = decimal.Decimal(0)
+        initial_position = Decimal(0)
         channel.SetPosition(initial_position)
-        initial_voltage = decimal.Decimal(0)
+        initial_voltage = Decimal(0)
         channel.SetOutputVoltage(initial_voltage)
-        time.sleep(0.5)
+        time.sleep(0.25)
     
     def SetMode(self,channel,mode):
         if mode == "CloseLoop":
@@ -60,41 +60,53 @@ class BPC303Piezo:
         channel.SetPositionControlMode(mode)
     
     def InitializeAllchan(self):
-        channelX = self.device.CreateChannel(1)
+        channelX = self.CreateChannel(1)
         self.SetMode(channelX,self.mode)
         self.SetZero(channelX)
-        channelY = self.device.CreateChannel(2)
-        self.SetMode(channelY,self.mode)
-        self.SetZero(channelY)
-        channelZ = self.device.CreateChannel(3)
+        channelZ = self.CreateChannel(2)
         self.SetMode(channelZ,self.mode)
         self.SetZero(channelZ)
-
-        return [channelX,channelY,channelY]
+        channelY = self.CreateChannel(3)
+        self.SetMode(channelY,self.mode)
+        self.SetZero(channelY)
+        return [channelX,channelY,channelZ]
 
     def SetX(self,position):
-        self.channelX.SetPosition(decimal.Decimal(float(position)))
+        self.channelX.SetPosition(Decimal(float(position)))
     
     def SetY(self,position):
-        self.channelY.SetPosition(decimal.Decimal(float(position)))
+        self.channelY.SetPosition(Decimal(float(position)))
 
     def SetZ(self,position):
-        self.channelZ.SetPosition(decimal.Decimal(float(position)))
+        self.channelZ.SetPosition(Decimal(float(position)))
 
-    def getX(self):
-        position = decimal.ToDouble(self.channelX.GetPosition())
+    def GetX(self):
+        position = Decimal.ToDouble(self.channelX.GetPosition())
         return position
 
-    def getY(self):
-        position = decimal.ToDouble(self.channelY.GetPosition())
+    def GetY(self):
+        position = Decimal.ToDouble(self.channelY.GetPosition())
         return position
 
-    def getZ(self):
-        position = decimal.ToDouble(self.channelZ.GetPosition())
+    def GetZ(self):
+        position = Decimal.ToDouble(self.channelZ.GetPosition())
         return position
     
-if "name" == "__main__":
-    deviceID = "71201654"
-    Piezo = BPC303Piezo("CloseLoop",deviceID)
-    Piezo.SetX(1)
-    print(Piezo.GetX())
+
+print("something")
+deviceID = "71201654"
+Piezo = BPC303Piezo("CloseLoop",deviceID)
+Zfocus = 3.88
+loops = 1
+Piezo.SetZ(Zfocus)
+time.sleep(1)
+while loops <= 100:
+    Piezo.SetX(15)
+    time.sleep(5)
+    Piezo.SetY(15)
+    time.sleep(5)
+    Piezo.SetX(0)
+    time.sleep(5)
+    Piezo.SetY(0)
+    time.sleep(5)
+    loops = loops + 1
