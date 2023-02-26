@@ -1,4 +1,4 @@
-from GVS012GalvoScanner.GVS012Galvo import * 
+
 import dash
 from dash import html
 from dash import dcc
@@ -72,6 +72,7 @@ app.layout=dbc.Container([
             html.Div("dy(nm)", style={'font-size': '18px', 'margin-left': '2%', 'margin-top' : '2%'}),
             dcc.Input("1", id="dy", type="number", style={'margin-left': '23%',}, step=0.1),
 
+
             # create scan button
             html.Br(),
             html.Button('Scan', id='scan', style={'margin-left' : '8%',  'width' : '300px', 'margin-top' : '2%',
@@ -80,11 +81,13 @@ app.layout=dbc.Container([
             html.Button('Stop/Resume', id='stop', style={'margin-left' : '8%',  'width' : '300px', 'margin-top' : '2%',
                                                     'border' : '2px inset', 'background-color' : 'pink',
                                                     'border-radius': '6px', 'height': '40px'}),
+            dcc.Input("2000", id="resolution", type="number", style={'margin-left': '23%',}, step=0.2),
 
         ],  align='start', width=4),
 
         dbc.Col([
-            dcc.Graph(id='graph',  style={'height': '100vh', 'width' : '100vh', 'margin-left' : '10%'},  clickData=None,
+            dcc.Graph(id='graph',  style={'height': '100vh', 'width' : '100vh', 'margin-left' : '10%'},
+                      #figure={'layout' : {'clickmode': "event+anywhere"}},
                       hoverData=None),
             dcc.Interval(id="interval", disabled=True)
 
@@ -133,7 +136,8 @@ def update_axis(click1, click2, spanx, spany, setx, sety):
     else:
         return dict(data=[trace1, trace2],
               layout=dict(xaxis=dict(range=[int(setx) - int(spanx) /2 - 1, int(setx) + int(spanx)/2 + 1]),
-                          yaxis=dict(range=[int(sety) - int(spany) /2 - 1, int(sety) + int(spany)/2 + 1])))
+                          yaxis=dict(range=[int(sety) - int(spany) /2 - 1, int(sety) + int(spany)/2 + 1]),
+                          clickmode="event+anywhere"))
 
 @app.callback(Output('graph', 'extendData'),
               [Input('interval', 'n_intervals'),
