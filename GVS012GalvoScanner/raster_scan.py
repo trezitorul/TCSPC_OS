@@ -1,5 +1,5 @@
 from GVS012Galvo import * 
-from BPC303PiezoController import BPC303PiezoController
+#from BPC303PiezoController import BPC303PiezoController
 from mcculw import ul
 from mcculw.enums import CounterChannelType
 from mcculw.device_info import DaqDeviceInfo
@@ -13,13 +13,13 @@ import threading
 import signal
 import matplotlib.pyplot as plt
 piezoid = "71201654"
-piezo = BPC303PiezoController("CloseLoop",piezoid)
+#piezo = BPC303PiezoController("CloseLoop",piezoid)
 galvo = GVS012Galvo(ULRange.BIP10VOLTS,"single_ended")
 intergration_t = 0.001 #Controls Integration Time
-dx = 0.002 #Step X resolution
-dy = 0.002 #Step Y resolution 
-spanx = 0.5 #Scan X Width
-spany = 0.5 #Scan Y Width
+dx = 0.001 #Step X resolution
+dy = 0.001#Step Y resolution 
+spanx = 2 #Scan X Width
+spany = 2 #Scan Y Width
 n = 0
 tragx, tragy, x_axis, y_axis, counts = [],[],[], [], []
 nspanx=math.ceil(spanx/dx)
@@ -46,7 +46,8 @@ for i in range(nspanx):
             t_left=t_left_temp
             print(str(int(100*n/totalN))+"% Complete, expected time remaining: " + str(int(t_left))+"S")
         n+=1
-
+galvo.setX(0)
+galvo.setY(0)
 tragx=np.round(tragx, decimals=4)
 tragy=np.round(tragy, decimals=4)
 plt.scatter(tragx, tragy)
