@@ -22,7 +22,7 @@ from Thorlabs.MotionControl.FilterFlipperCLI import FilterFlipper
 
 class MFF101FlipperMirror:
     def __init__(self,deviceID):
-        self.SetupDevice(deviceID)
+        self.device = self.SetupDevice(deviceID)
     
     def SetupDevice(self,deviceID):
         DeviceManagerCLI.BuildDeviceList()
@@ -30,7 +30,19 @@ class MFF101FlipperMirror:
         device.Connect(deviceID)
         device.StartPolling(1)
         time.sleep(0.25)
+        device.EnableDevice()
+        time.sleep(0.25)
         return device
 
-    def move
-
+    def SetMode(self,mode):
+        if mode == 'on':
+            self.device.SetPosition(2,60000)
+        elif mode == 'off':
+            self.device.SetPosition(1,60000)
+        else:
+            print('wrong mode, try again')
+        return
+    
+    def HomeMirror(self):
+        self.device.Home(60000)
+        return
