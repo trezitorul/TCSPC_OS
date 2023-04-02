@@ -27,16 +27,19 @@ from Thorlabs.MotionControl.GenericMotorCLI.ControlParameters import ControlPara
 from Thorlabs.MotionControl.GenericMotorCLI.AdvancedMotor import AdvancedMotor
 from Thorlabs.MotionControl.GenericMotorCLI.KCubeMotor import KcubeMotor
 from Thorlabs.MotionControl.GenericMotorCLI.Settings import Settings
-from Thorlabs.MotionControl.KCube.DCServoCLI import DCServoCLI
+from Thorlabs.MotionControl.KCube.DCServoCLI import KCubeDCServo
 
 
 logging.basicConfig(format='%(asctime)s: %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 
-def Setup_Device(deviceID):
-    DeviceManagerCLI.BuildDeviceList()
-    device =  BenchtopPiezo.CreateBenchtopPiezo(deviceID)
-    device.Connect(deviceID)
-    return device
-
-if __name__ == "__main__":
-    print("...")  
+class KDC101BrushlessMotorController:
+    def __init__(self,deviceID):
+        self.device = self.SetupDevice(deviceID)
+    
+    def SetupDevice(self,deviceID):
+        DeviceManagerCLI.BuildDeviceList()
+        device =  KCubeDCServo.CreateKCubeDCServo(str(deviceID))
+        device.Connect(deviceID)
+        device.StartPolling(1)
+        time.sleep(0.25)
+        return device 
