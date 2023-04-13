@@ -40,7 +40,7 @@ class PowerMeter:
             print("Last calibration date: ",c_char_p(message.raw).value)
             print("")
 
-            time.sleep(2) #minimize?
+            time.sleep(0.1) #minimize?
 
     def setMeterWavelength(self, desiredWavelength):
         # Set wavelength to wavelength in nm.
@@ -65,8 +65,8 @@ class PowerMeter:
         self.tlPM.measPower(byref(power))
         power_measurement = power.value
         time = datetime.now()
-        print(time, ":", power_measurement, "W")
-        print("")
+        #print(time, ":", power_measurement, "W")
+        #print("")
         return power_measurement
 
     def getMeasurements(self, measurementCount, sleepTime):
@@ -82,10 +82,10 @@ class PowerMeter:
             self.tlPM.measPower(byref(power))
             power_measurements.append(power.value)
             times.append(datetime.now())
-            print(times[count], ":", power_measurements[count], "W,", count+1, "out of", measurementCount, "measurements complete")
+            #print(times[count], ":", power_measurements[count], "W,", count+1, "out of", measurementCount, "measurements complete")
             count+=1
             time.sleep(sleepTime)
-        print("")
+        #print("")
         return times, power_measurements
 
     def close(self):
