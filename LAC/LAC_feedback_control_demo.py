@@ -35,7 +35,7 @@ Kp=5#2 is Amazing
 Ki=0
 Kd=0.1
 bias=0
-cycleTime=0.1
+cycleTime=0.5
 dt=0.1
 iteration_time=dt
 pwrToMot=2/10
@@ -62,11 +62,13 @@ setPos=int(0.5*1023)
 lac.set_position(setPos)
 time.sleep(5)
 
-for i in range(90):
+while t<=60:
     tstart= time.perf_counter()
     iteration_time=dt
+    t=t+dt
     times.append(t)
-    t=t+1
+    
+    
     powers.append(meter1.getMeasurement() * W)
     error = (setpoint * uW-meter1.getMeasurement() * W )
     integral=integral_prior + error*iteration_time
@@ -76,6 +78,7 @@ for i in range(90):
     error_prior = error
     integral_prior=integral
     print("---------")
+    print(round(t, 1))
     print(powers[-1])
     print(error)
     print(output)
@@ -109,7 +112,10 @@ for i in range(90):
     #print(delta)
     #print(lac.get_feedback()/1023)
     #print("")
-    time.sleep(iteration_time)
+    #time.sleep(iteration_time)
 
 plt.plot(times, powers)
+plt.title("Linear Actuated Variable Attenuator (LAVA) Performance")
+plt.xlabel("Time (s)")
+plt.ylabel("Optical Power (uW)")
 plt.show()

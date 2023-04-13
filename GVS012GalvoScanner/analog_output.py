@@ -30,7 +30,7 @@ try:
     for i in range(int(1e4)):
         tstart=time.perf_counter()
         tArray.append(t)
-        voltage= 12*np.sin(((2*np.pi)/p)*t)
+        voltage= 10*np.sin(((2*np.pi)/p)*t)
         voltVal=ul.from_eng_units(board_num, ai_range, voltage)
         value_out = ul.a_out(board_num, channel_out, ai_range,voltVal)
         x_axis.append(i)

@@ -28,8 +28,6 @@ class MFF101FlipperMirror:
     
     def SetupDevice(self,deviceID):
         DeviceManagerCLI.BuildDeviceList()
-
-        print(list)
         self.device = FilterFlipper.CreateFilterFlipper(str(deviceID))
         self.device.Connect(deviceID)
         self.device.StartPolling(1)
@@ -50,7 +48,5 @@ class MFF101FlipperMirror:
     def HomeMirror(self):
         self.device.Home(60000)
         return
-deviceID = "37005411"
-mirror = MFF101FlipperMirror(deviceID)
-mirror.HomeMirror()
-mirror('on')
+
+
