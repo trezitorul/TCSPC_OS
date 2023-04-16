@@ -13,11 +13,18 @@ from threading import Thread
 # ** Async Part **
 
 
-async def some_print_task():
+async def some_print_task(a):
     """Some async function"""
-    while True:
-        await asyncio.sleep(2)
-        print("Some Task")
+    while (True):
+        print('start')
+        await asyncio.sleep(0.1)
+        print(a)
+
+async def run_some_print_task(a):
+    global task
+    task = asyncio.create_task(some_print_task(a))
+    await task
+    print("finished")
 
 
 async def another_task():
@@ -36,6 +43,7 @@ def async_main_wrapper():
     """Not async Wrapper around async_main to run it as target function of Thread"""
     asyncio.run(async_main())
 
+#loop = asyncio.get_event_loop()
 # *** Flask Part ***:
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])  # remove "Updating..." from title
@@ -108,6 +116,7 @@ app.layout=dbc.Container([
             html.Button('Stop/Resume', id='stop', style={'margin-left' : '8%',  'width' : '300px', 'margin-top' : '2%',
                                                     'border' : '2px inset', 'background-color' : 'pink',
                                                     'border-radius': '6px', 'height': '40px'}),
+            html.Div(id='hidden-div', style={'display':'none'})
 
         ],  align='start', width=4),
 
@@ -120,7 +129,15 @@ app.layout=dbc.Container([
     ], justify='start')
 ], fluid=True, style={'background-color': 'ghostwhite'})
 
-
+@app.callback(Output('hidden-div', 'children'),
+               [Input('scan', 'n_clicks'),
+              Input('stop', 'n_clicks')])
+def call_async(scan, stop):
+    if 'scan' == ctx.triggered_id:
+        asyncio.run(run_some_print_task(3))
+    elif 'stop' == ctx.triggered_id:
+        task.cancel()
+    return 0
 
 # setting x, y
 @app.callback(Output('current_x', 'children'),
@@ -129,6 +146,9 @@ app.layout=dbc.Container([
                State('set_y', 'value'),
                Input('go_to', 'n_clicks')])
 def setting_x(valuex, valuey, n_clicks):
+    #asyncio.run(run_some_print_task())
+
+
     return valuex, valuey
 
 @app.callback(
@@ -205,8 +225,10 @@ def extend_data(n, spanx, spany, setx, sety, dx, dy, disabled):
                Input('stop', 'n_clicks')])
 def restart_interval(vel, interval, disabled, scan, go_to, stop):
     if 'scan' == ctx.triggered_id:
+        #asyncio.run(run_some_print_task())
         return 0, (1 / int(vel)) * pow(10,6), False
     elif 'stop' == ctx.triggered_id:
+        #task.cancel()
         if (disabled == True):
             return interval, (1 / int(vel)) * pow(10,6), False
         else:
@@ -217,8 +239,9 @@ def restart_interval(vel, interval, disabled, scan, go_to, stop):
 
 if __name__ == '__main__':
     # run all async stuff in another thread
-    th = Thread(target=async_main_wrapper)
-    th.start()
+    #th = Thread(target=async_main_wrapper)
+    #th.start()
+    #asyncio.run()
     # run Flask server
     app.run_server(debug=False)
-    th.join()
+    #th.join()
