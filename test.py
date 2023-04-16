@@ -1,4 +1,4 @@
-
+from flask import Flask, jsonify
 import dash
 from dash import html
 from dash import dcc
@@ -7,16 +7,49 @@ import math
 from dash.dependencies import Input, Output, State
 from dash import ctx
 import dash_bootstrap_components as dbc
-import math as m
+import asyncio
+from threading import Thread
 
+# ** Async Part **
+
+
+async def some_print_task(a):
+    """Some async function"""
+    while (True):
+        print('start')
+        await asyncio.sleep(0.1)
+        print(a)
+
+async def run_some_print_task(a):
+    global task
+    task = asyncio.create_task(some_print_task(a))
+    await task
+    print("finished")
+
+
+async def another_task():
+    """Another async function"""
+    while True:
+        await asyncio.sleep(3)
+        print("Another Task")
+
+
+async def async_main():
+    """Main async function"""
+    await asyncio.gather(some_print_task(), another_task())
+
+
+def async_main_wrapper():
+    """Not async Wrapper around async_main to run it as target function of Thread"""
+    asyncio.run(async_main())
+
+#loop = asyncio.get_event_loop()
+# *** Flask Part ***:
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])  # remove "Updating..." from title
 
 
-X = []
-Y = []
-length_data = []
-length_data.append(0)
+Y = deque(maxlen=20)
 
 app.layout=dbc.Container([
     dbc.Row([
@@ -83,23 +116,28 @@ app.layout=dbc.Container([
             html.Button('Stop/Resume', id='stop', style={'margin-left' : '8%',  'width' : '300px', 'margin-top' : '2%',
                                                     'border' : '2px inset', 'background-color' : 'pink',
                                                     'border-radius': '6px', 'height': '40px'}),
+            html.Div(id='hidden-div', style={'display':'none'})
 
         ],  align='start', width=4),
 
         dbc.Col([
             dcc.Graph(id='graph',  style={'height': '100vh', 'width' : '100vh', 'margin-left' : '10%'},  clickData=None,
                       hoverData=None),
-            dcc.Interval(id="interval_hardware", interval=500, disabled=True),
-            dcc.Interval(id="interval_gui", disabled=True),
-            html.Div(id='hidden-div', style={'display': 'none'}),
-            html.Div(id='nothing', style={'display': 'none'})
-
+            dcc.Interval(id="interval", disabled=True)
 
         ], width=8)
     ], justify='start')
 ], fluid=True, style={'background-color': 'ghostwhite'})
 
-
+@app.callback(Output('hidden-div', 'children'),
+               [Input('scan', 'n_clicks'),
+              Input('stop', 'n_clicks')])
+def call_async(scan, stop):
+    if 'scan' == ctx.triggered_id:
+        asyncio.run(run_some_print_task(3))
+    elif 'stop' == ctx.triggered_id:
+        task.cancel()
+    return 0
 
 # setting x, y
 @app.callback(Output('current_x', 'children'),
@@ -108,6 +146,9 @@ app.layout=dbc.Container([
                State('set_y', 'value'),
                Input('go_to', 'n_clicks')])
 def setting_x(valuex, valuey, n_clicks):
+    #asyncio.run(run_some_print_task())
+
+
     return valuex, valuey
 
 @app.callback(
@@ -138,33 +179,20 @@ def update_axis(click1, click2, spanx, spany, setx, sety):
                     layout=dict(xaxis=dict(range=[int(spanx) * (-1), int(spanx)]),
                                 yaxis=dict(range=[int(spany) * (-1),  int(spany)])))
     else:
-
         return dict(data=[trace1, trace2],
               layout=dict(xaxis=dict(range=[int(setx) - int(spanx) /2 - 1, int(setx) + int(spanx)/2 + 1]),
                           yaxis=dict(range=[int(sety) - int(spany) /2 - 1, int(sety) + int(spany)/2 + 1])))
 
 @app.callback(Output('graph', 'extendData'),
-              [ State('interval_hardware', 'disabled'),
-                Input('interval_gui', 'n_intervals'),
-              ])
-def extend_data(state, n):
-    length_data.append(len(X))
-    #print(length_data)
-    #print(X)
-    print(state)
-    return dict(x=[ X[0:]], y=[ Y[0:] ]) , [0], 1000
-
-
-@app.callback(Output('nothing', 'children'),
-              [Input('interval_hardware', 'n_intervals'),
+              [Input('interval', 'n_intervals'),
                State('x_span', 'value'),
                State('y_span', 'value'),
                State('set_x', 'value'),
                State('set_y', 'value'),
                State('dx', 'value'),
                State('dy', 'value'),
-               ])
-def update_hardware(n, spanx, spany, setx, sety, dx, dy):
+               State('interval', 'disabled')])
+def extend_data(n, spanx, spany, setx, sety, dx, dy, disabled):
     if (float(dx) < 1):
         num_points_row =  int(int(spanx) // float(dx)) + 2
     else:
@@ -183,23 +211,24 @@ def update_hardware(n, spanx, spany, setx, sety, dx, dy):
     else:
         x = int(setx) + int(spanx) / 2 - ((int(n)) % num_points_row) * float(dx)
 
-    X.append(x)
-    Y.append(y)
-    return 0
 
-@app.callback(Output('interval_gui', 'n_intervals'),
-              Output('interval_gui', 'interval'),
-              Output('interval_gui', 'disabled'),
+    return dict(x=[[x]], y=[[y]]), [0], 1000,
+
+@app.callback(Output('interval', 'n_intervals'),
+              Output('interval', 'interval'),
+              Output('interval', 'disabled'),
               [State('velocity', 'value'),
-               State('interval_gui', 'n_intervals'),
-               State('interval_gui', 'disabled'),
+               State('interval', 'n_intervals'),
+               State('interval', 'disabled'),
               Input('scan', 'n_clicks'),
                Input('go_to', 'n_clicks'),
                Input('stop', 'n_clicks')])
 def restart_interval(vel, interval, disabled, scan, go_to, stop):
     if 'scan' == ctx.triggered_id:
+        #asyncio.run(run_some_print_task())
         return 0, (1 / int(vel)) * pow(10,6), False
     elif 'stop' == ctx.triggered_id:
+        #task.cancel()
         if (disabled == True):
             return interval, (1 / int(vel)) * pow(10,6), False
         else:
@@ -207,25 +236,12 @@ def restart_interval(vel, interval, disabled, scan, go_to, stop):
     else:
         return 0, 0, True
 
-@app.callback(Output('interval_hardware', 'n_intervals'),
-              Output('interval_hardware', 'interval'),
-              Output('interval_hardware', 'disabled'),
-              [State('velocity', 'value'),
-               State('interval_hardware', 'n_intervals'),
-               State('interval_hardware', 'disabled'),
-              Input('scan', 'n_clicks'),
-               Input('go_to', 'n_clicks'),
-               Input('stop', 'n_clicks')])
-def restart_interval(vel, interval, disabled, scan, go_to, stop):
-    if 'scan' == ctx.triggered_id:
-        return 0, 500, False
-    elif 'stop' == ctx.triggered_id:
-        if (disabled == True):
-            return interval, 500, False
-        else:
-            return interval, 0, True
-    else:
-        return 0, 0, True
 
 if __name__ == '__main__':
-        app.run_server(debug=True)
+    # run all async stuff in another thread
+    #th = Thread(target=async_main_wrapper)
+    #th.start()
+    #asyncio.run()
+    # run Flask server
+    app.run_server(debug=False)
+    #th.join()
