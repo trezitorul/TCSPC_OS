@@ -15,8 +15,8 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])  # remove
 
 X = []
 Y = []
-length = []
-length.append(0)
+length_data = []
+length_data.append(0)
 
 app.layout=dbc.Container([
     dbc.Row([
@@ -144,13 +144,15 @@ def update_axis(click1, click2, spanx, spany, setx, sety):
                           yaxis=dict(range=[int(sety) - int(spany) /2 - 1, int(sety) + int(spany)/2 + 1])))
 
 @app.callback(Output('graph', 'extendData'),
-              [
+              [ State('interval_hardware', 'disabled'),
                 Input('interval_gui', 'n_intervals'),
               ])
-def extend_data(n):
-    length.append(len(X))
-    print(X)
-    return dict(x=[X[0:]], y=[ Y[0:] ]) , [0], 1000
+def extend_data(state, n):
+    length_data.append(len(X))
+    #print(length_data)
+    #print(X)
+    print(state)
+    return dict(x=[ X[0:]], y=[ Y[0:] ]) , [0], 1000
 
 
 @app.callback(Output('nothing', 'children'),
