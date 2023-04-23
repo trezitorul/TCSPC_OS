@@ -24,7 +24,7 @@ async def run_some_print_task(a):
     global task
     task = asyncio.create_task(some_print_task(a))
     await task
-    print("finished")
+    # print("finished")
 
 
 async def another_task():
