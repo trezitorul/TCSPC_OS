@@ -20,10 +20,10 @@ from LAC import LAC
 from MFF101FlipperMirror import MFF101FlipperMirror
 deviceID = "37005411"
 mirror = MFF101FlipperMirror(deviceID)
-mirror.HomeMirror()
+#mirror.HomeMirror()
 
 
-mirror.SetMode("off")
+#mirror.SetMode("off")
 print("Disengaging Camera Assembly")
 time.sleep(1)
 lac = LAC()
@@ -44,6 +44,7 @@ nspanx=math.ceil(spanx/dx)
 nspany=math.ceil(spany/dy)
 x0=-1*spanx/2
 y0=-1*spany/2
+
 totalN=nspanx*nspany
 n=1
 t_left=0

@@ -60,7 +60,7 @@ print("-------------------------------")'''
 pwrToMot=0.01
 setPos=int(0.5*1023)
 lac.set_position(setPos)
-time.sleep(5)
+time.sleep(15)
 
 while t<=60:
     tstart= time.perf_counter()

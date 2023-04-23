@@ -11,12 +11,18 @@ import math as m
 import os
 import time
 import logging
+import numpy as np
 
 import matplotlib.pyplot as plt
 
+global data_matrix
+data_matrix = np.zeros([1,1])
+n=0
 
-
-galvo = GVS012Galvo(ULRange.BIP10VOLTS,"differential")
+galvo = GVS012Galvo(ULRange.BIP10VOLTS,"single_ended")
+galvo.setX(0)
+galvo.setY(0)
+time.sleep(1)
 vArray = []
 outVal=0
 s=1
@@ -42,7 +48,7 @@ X_sim = deque(maxlen=50) #simulated x
 Y_sim = deque(maxlen=50) #simulated y
 X = deque(maxlen=50) #actual x
 Y = deque(maxlen=50) #actual y 
-
+count_data = []
 ''' formatting app
     dbc.Row and dbc.Col: use row and column for easy formatting. 
     here I used 1 row and 2 main columns: 1 column for interactive buttons and inputs to the left,
@@ -136,12 +142,13 @@ app.layout=dbc.Container([
 @app.callback(Output('hidden-div', 'children'),
               [State('set_x', 'value'),
                State('set_y', 'value'),
+               State('interval', 'interval'),
                Input('interval', 'n_intervals'),
                State('x_span', 'value'),
                State('y_span', 'value'),
                State('dx', 'value'),
                State('dy', 'value')])    
-def background_update(setx, sety, n, spanx, spany, dx, dy):
+def background_update(setx, sety, integrationTime ,n, spanx, spany, dx, dy):
     enable = False
     if (float(dx) < 1):
         num_points_row =  int(int(spanx) // float(dx)) + 2
@@ -174,7 +181,14 @@ def background_update(setx, sety, n, spanx, spany, dx, dy):
     y1 = galvo.getY()
     X.append(x1)
     Y.append(y1)
-    print(enable)
+    print(x)
+    print(y)
+
+    count = galvo.getCounts(integrationTime/1000)
+    #count=randint(0,1000)
+    count_data.append(count)
+ 
+
     return enable
 
 '''
@@ -192,8 +206,10 @@ def background_update(setx, sety, n, spanx, spany, dx, dy):
                ])
 def setting_x(setx, sety, go_to, n):
     if 'go_to' == ctx.triggered_id:
-        galvo.setX(setx)
-        galvo.setY(sety)
+        #galvo.setX(setx)
+        #galvo.setY(sety)
+        galvo.setX(0)
+        galvo.setY(0)
         time.sleep(0.4)
         x = galvo.getX()
         y = galvo.getY()
@@ -209,47 +225,70 @@ def setting_x(setx, sety, go_to, n):
    Also graph a simulated set-x, set-y value whenever go-to is pressed'''
 
 @app.callback(Output('graph', 'figure'),
-               [Input('scan', 'n_clicks'),
-                Input('go_to', 'n_clicks'),
+                [Input('scan', 'n_clicks'),
+            #     Input('go_to', 'n_clicks'),
+            Input('interval', 'n_intervals'),
                State('x_span', 'value'),
                State('y_span', 'value'),
                State('set_x', 'value'),
                State('set_y', 'value'),
+               State('dx', 'value'),
+               State('dy', 'value'),
                ])
-def update_axis(click1, click2, spanx, spany, setx, sety):
+def update_axis(scan, n,spanx, spany, setx, sety,dx,dy):
 
-    trace1 = {'x': [], 'y' : [], 'mode': 'markers', 'name': 'actual', "marker" : {"color" : "rgb(235,37,37)"}}
-    trace2 = {'x': [int(setx)], 'y': [int(sety)], 'name' : 'center'}
-    trace3 = {'x': [], 'y':[], 'mode' : 'line',  "line" : {"width" : "1", "color" : "rgb(192,192,192)"},
-                'name' : 'simulated'}
+    if n==0:
+        xspan = int(int(spanx) // float(dx)) + 2
+        yspan = int(int(spanx) // float(dx)) + 2
+        global data_matrix
+        data_matrix = np.zeros((math.ceil(yspan), math.ceil(xspan)))
+    # trace1 = {'x': [], 'y' : [], 'mode': 'markers', 'name': 'actual', "marker" : {"color" : "rgb(235,37,37)"}}
+    # trace2 = {'x': [int(setx)], 'y': [int(sety)], 'name' : 'center'}
+    # trace3 = {'x': [], 'y':[], 'mode' : 'line',  "line" : {"width" : "1", "color" : "rgb(192,192,192)"},
+    #             'name' : 'simulated'}
+    # if "go_to" == ctx.triggered_id:
+    #     return if "go_to" == ctx.triggered_id:
+    #                 layout=dict(xaxis=dict(range=[int(spanx) * (-1), int(spanx)]),
+    #                             yaxis=dict(range=[int(spany) * (-1),  int(spany)])))
+    # else:
+    #     return dict(data=[trace3, trace2, trace1],
+    #           layout=dict(xaxis=dict(range=[(int(setx) - int(spanx) /2 - 1), int(setx) + int(spanx)/2 + 1]),
+    #                       yaxis=dict(range=[int(sety) - int(spany) /2 - 1, int(sety) + int(spany)/2 + 1])))
+    
+    trace4 = {'z': data_matrix, 'type' : 'heatmap'}
     if "go_to" == ctx.triggered_id:
-        return dict(data=[trace2],
-                    layout=dict(xaxis=dict(range=[int(spanx) * (-1), int(spanx)]),
-                                yaxis=dict(range=[int(spany) * (-1),  int(spany)])))
-    else:
-        return dict(data=[trace3, trace2, trace1],
-              layout=dict(xaxis=dict(range=[(int(setx) - int(spanx) /2 - 1), int(setx) + int(spanx)/2 + 1]),
-                          yaxis=dict(range=[int(sety) - int(spany) /2 - 1, int(sety) + int(spany)/2 + 1])))
-
+        return dict(data=[trace4])
+    if (n > 0): 
+        i = int(n%data_matrix.shape[0])
+        j = int(n/data_matrix.shape[1])
+        print("---------------------------")
+        print(data_matrix.shape)
+        print(i)
+        print(j)
+        print(count_data[-1])
+        data_matrix[j][i] = count_data[-1]
+    return dict(data=[trace4])
 '''callback to extend more data points in the graph. 
     output in the form of [value to be added to the trace, which trace, # points to retain on the graph]
     value to be added to the trace is taken from the stored lists
     The actual reading is only plotted when (# of interval passed) > 0  '''
-@app.callback(Output('graph', 'extendData'),
-              [State('set_x', 'value'),
-               State('set_y', 'value'),
-               State('x_span', 'value'),
-               State('y_span', 'value'),
-               State('dx', 'value'),
-               State('dy', 'value'),
-               Input('interval', 'n_intervals')],)
-def extend_data(setx, sety, spanx, spany, dx, dy, n):
+# @app.callback(Output('graph', 'extendData'),
+#               [State('set_x', 'value'),
+#                State('set_y', 'value'),
+#                State('x_span', 'value'),
+#                State('y_span', 'value'),
+#                State('dx', 'value'),
+#                State('dy', 'value'),
+#                Input('interval', 'n_intervals')],)
+# def extend_data(setx, sety, spanx, spany, dx, dy, n):
     
     
-    if (n > 0):
-        return dict(x=[ [X_sim[-1]], [X[-1]]], y=[[Y_sim[-1]], [Y[-1]]]), [0,2], 1000
-    else:
-        return dict(x=[[X_sim[-1]]], y=[[Y_sim[-1]]]), [0], 1000
+    # if (n > 0):
+    #     return dict(x=[ [X_sim[-1]], [X[-1]]], y=[[Y_sim[-1]], [Y[-1]]]), [0,2], 1000
+    # else:
+    #     return dict(x=[[X_sim[-1]]], y=[[Y_sim[-1]]]), [0], 1000
+    #     return 
+    
 
 
 '''callback to turn on/off the interval counter
@@ -286,9 +325,17 @@ def disable_interval(goto, scan, stop, restart, disabled ):
               Input('scan', 'n_clicks'),
               #Input('go_to', 'n_clicks'),
               Input('restart', 'n_clicks'),
-               Input('stop', 'n_clicks')])
-def restart_interval(vel, interval, disabled, scan, restart, stop):
+               Input('stop', 'n_clicks'),
+               State('x_span', 'value'),
+               State('y_span', 'value'),
+            State('dx', 'value'),
+               State('dy', 'value')])
+def restart_interval(vel, interval, disabled, scan, restart, stop, spanx, spany, dx, dy):
     if 'scan' == ctx.triggered_id:
+        xspan = int(int(spanx) // float(dx)) + 2
+        yspan = int(int(spanx) // float(dx)) + 2
+        global data_matrix
+        data_matrix = np.zeros((math.ceil(yspan), math.ceil(xspan)))
         return 0, (1 / int(vel)) * pow(10,6) #10^6 is because base unit is um and interval is ms
     elif 'stop' == ctx.triggered_id:
         if (disabled == True):
