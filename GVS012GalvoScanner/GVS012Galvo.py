@@ -27,7 +27,7 @@ class GVS012Galvo:
         self.thetaLow=1
         self.phiHigh=2
         self.phiLow=3
-        self.VToA=0.5*0.5 #Volts per Optical Scan Angle (1/2 * 0.5 V per Mechanical Angle, Optical Scan Angle is 2X Mechanical Scan Angle)
+        self.VToA=10 #Volts per Optical Scan Angle (1/2 * 0.5 V per Mechanical Angle, Optical Scan Angle is 2X Mechanical Scan Angle)
         self.projectionDistance=10.63*self.um #1/tan(31) used for development only, corresponds to max displacement of the X axis at theta=31 degrees. Units can be chosen arbitrarily for now as um
     
     def setMode(self,mode):
@@ -59,9 +59,10 @@ class GVS012Galvo:
         '''
         voltage_pk = 10
         if abs(voltage) > abs(voltage_pk):
-            print("invalid voltage please reenter correct voltage")
+            print("invalid voltage on" + str(channel_out)+" of " + str(voltage) + "please reenter correct voltage")
             return
         else:
+            print(voltage)
             voltVal=ul.from_eng_units(self.board_num, self.range, voltage)
             value_out = ul.a_out(self.board_num, channel_out, self.range,voltVal)
             return
@@ -70,7 +71,7 @@ class GVS012Galvo:
         '''
         Set the analog output differential voltage between 2 channel
         '''
-        voltage_pk = 10
+        voltage_pk = 20
         if abs(voltage) > abs(voltage_pk):
             print("invalid voltage please reenter correct voltage")
             return
