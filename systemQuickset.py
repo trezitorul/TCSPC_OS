@@ -15,4 +15,4 @@ from MFF101FlipperMirror import MFF101FlipperMirror
 #time.sleep(1)
 lac = LAC()
 time.sleep(1)
-lac.set_position(int(0.7*1023))
+lac.set_position(int(0.9*1023))

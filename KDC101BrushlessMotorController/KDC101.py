@@ -64,6 +64,6 @@ class KDC101BrushlessMotorController:
 
 deviceID = "27262347"
 Motor = KDC101BrushlessMotorController(deviceID)
-Motor.SetPosition(180,60)
+Motor.SetPosition(270,100)
 position = Motor.GetPosition()
 print(position)
