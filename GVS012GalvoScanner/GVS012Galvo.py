@@ -22,7 +22,7 @@ class GVS012Galvo:
         self.LUT = []
         self.mode = mode
         self.setMode(mode)
-        self.counterchannel = 0
+        self.counterchannel = 0 #detecting either there is single photon (1) or not(0)
         self.thetaHigh=0
         self.thetaLow=1
         self.phiHigh=2
@@ -173,6 +173,9 @@ class GVS012Galvo:
         return
     
     def getCounts(self,dt):
+        '''
+        Implementing electrical pulse countings on the Daq cards
+        '''
         daq_dev_info = DaqDeviceInfo(self.board_num)
         ctr_info = daq_dev_info.get_ctr_info()
         if self.counterchannel != ctr_info.chan_info[0].channel_num:
