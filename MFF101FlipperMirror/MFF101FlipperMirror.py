@@ -13,13 +13,11 @@ sys.path.append(r"C:\\Program Files\\Thorlabs\\Kinesis")
 clr.AddReference("C:\\Program Files\\Thorlabs\\Kinesis\\Thorlabs.MotionControl.DeviceManagerCLI.dll")
 clr.AddReference("C:\\Program Files\\Thorlabs\\Kinesis\\Thorlabs.MotionControl.GenericMotorCLI.dll")
 clr.AddReference("C:\\Program Files\\Thorlabs\\Kinesis\\Thorlabs.MotionControl.FilterFlipperCLI.dll")
-#clr.AddReference("C:\\Program Files\\Thorlabs\\Kinesis\\Thorlabs.MotionControl.FilterFlipper")
 clr.AddReference("System.Collections")
 clr.AddReference("System.Linq")
 
 from Thorlabs.MotionControl.DeviceManagerCLI import DeviceManagerCLI 
 from Thorlabs.MotionControl.DeviceManagerCLI import DeviceNotReadyException 
-#from Thorlabs.MotionControl.FilterFlipper import FilterFlipper
 from Thorlabs.MotionControl.FilterFlipperCLI import FilterFlipper
 
 class MFF101FlipperMirror:
@@ -27,6 +25,9 @@ class MFF101FlipperMirror:
         self.device = self.SetupDevice(deviceID)
     
     def SetupDevice(self,deviceID):
+        '''
+        Create mirrors
+        '''
         DeviceManagerCLI.BuildDeviceList()
         self.device = FilterFlipper.CreateFilterFlipper(str(deviceID))
         self.device.Connect(deviceID)
@@ -37,6 +38,9 @@ class MFF101FlipperMirror:
         return self.device
 
     def SetMode(self,mode):
+        '''
+        turn the mirror 90 degrees in relative to the main body (on) or 0 degree (off)
+        '''
         if mode == 'on':
             self.device.SetPosition(2,60000)
         elif mode == 'off':
@@ -46,7 +50,15 @@ class MFF101FlipperMirror:
         return
     
     def HomeMirror(self):
+        '''
+        Home mirror
+        '''
         self.device.Home(60000)
         return
-
-
+'''
+basic demo
+'''
+deviceID = "37005466"
+Mirror = MFF101FlipperMirror(deviceID)
+Mirror.HomeMirror()
+Mirror.SetMode("off")
