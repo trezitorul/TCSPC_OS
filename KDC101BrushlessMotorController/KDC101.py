@@ -11,10 +11,6 @@ from ctypes import *
 sys.path.append(r"C:\\Program Files\\Thorlabs\\Kinesis")
 clr.AddReference("C:\\Program Files\\Thorlabs\\Kinesis\\Thorlabs.MotionControl.DeviceManagerCLI.dll")
 clr.AddReference("C:\\Program Files\\Thorlabs\\Kinesis\\Thorlabs.MotionControl.GenericMotorCLI.dll")
-#clr.AddReference("C:\\Program Files\\Thorlabs\\Kinesis\\Thorlabs.MotionControl.GenericMotorCLI.ControlParameters.dll")
-#clr.AddReference("C:\\Program Files\\Thorlabs\\Kinesis\\Thorlabs.MotionControl.GenericMotorCLI.AdvancedMotor.dll")
-#clr.AddReference("C:\\Program Files\\Thorlabs\\Kinesis\\Thorlabs.MotionControl.GenericMotorCLI.KCubeMotor.dll")
-#clr.AddReference("C:\\Program Files\\Thorlabs\\Kinesis\\Thorlabs.MotionControl.GenericMotorCLI.Settings.dll")
 clr.AddReference("C:\\Program Files\\Thorlabs\\Kinesis\\Thorlabs.MotionControl.KCube.DCServoCLI.dll")
 clr.AddReference("System.Collections")
 clr.AddReference("System.Linq")
@@ -23,10 +19,6 @@ clr.AddReference('System')
 from System import Decimal
 from Thorlabs.MotionControl.DeviceManagerCLI import DeviceManagerCLI 
 from Thorlabs.MotionControl.GenericMotorCLI import GenericMotorCLI
-#from Thorlabs.MotionControl.GenericMotorCLI.ControlParameters import ControlParameters
-#from Thorlabs.MotionControl.GenericMotorCLI.AdvancedMotor import AdvancedMotor
-#from Thorlabs.MotionControl.GenericMotorCLI.KCubeMotor import KcubeMotor
-#from Thorlabs.MotionControl.GenericMotorCLI.Settings import Settings
 from Thorlabs.MotionControl.KCube.DCServoCLI import KCubeDCServo
 
 
@@ -64,6 +56,6 @@ class KDC101BrushlessMotorController:
 
 deviceID = "27262347"
 Motor = KDC101BrushlessMotorController(deviceID)
-Motor.SetPosition(270,100)
+Motor.SetPosition(90,200)
 position = Motor.GetPosition()
 print(position)
