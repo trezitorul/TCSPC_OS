@@ -30,6 +30,9 @@ class KDC101BrushlessMotorController:
         self.config = self.SetupStage(deviceID)
     
     def SetupDevice(self,deviceID):
+        '''
+        Create Device
+        '''
         DeviceManagerCLI.BuildDeviceList()
         device =  KCubeDCServo.CreateKCubeDCServo(str(deviceID))
         device.Connect(deviceID)
@@ -39,6 +42,9 @@ class KDC101BrushlessMotorController:
         time.sleep(0.25)
         return device 
     def SetupStage(self,deviceID):
+        '''
+        Load Config for motor operation
+        '''
         config = self.device.LoadMotorConfiguration(str(deviceID))
         config.DeviceSettingsName = "MTS25"
         config.UpdateCurrentConfiguration()
@@ -53,7 +59,9 @@ class KDC101BrushlessMotorController:
     def GetPosition(self):
         pos = Decimal.ToDouble(self.device.Position)
         return pos
-
+'''
+Move the motor to a specific angle
+'''
 deviceID = "27262347"
 Motor = KDC101BrushlessMotorController(deviceID)
 Motor.SetPosition(90,200)

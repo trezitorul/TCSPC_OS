@@ -1,10 +1,11 @@
-from LAC import LAC
+#from LAC import LAC
 import time
 import sys
 import matplotlib.pyplot as plt
 sys.path.append("C:\\Users\\Ozymandias\\TCSPC_project\\PM16_120PowerMonitor")
+sys.path.append("C:\\Users\\Ozymandias\\TCSPC_project\\LAC")
 from PowerMeter import *
-
+from LAC import LAC
 lac = LAC()
 
 meter1 = PowerMeter()

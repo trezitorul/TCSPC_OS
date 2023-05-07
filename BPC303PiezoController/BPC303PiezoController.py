@@ -92,8 +92,7 @@ class BPC303Piezo:
         position = Decimal.ToDouble(self.channelZ.GetPosition())
         return position
     
-
-print("something")
+"move the piezo in a square movement"
 deviceID = "71201654"
 Piezo = BPC303Piezo("CloseLoop",deviceID)
 Zfocus = 3.88

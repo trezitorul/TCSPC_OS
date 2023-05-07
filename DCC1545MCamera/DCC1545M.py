@@ -183,9 +183,7 @@ class Camera(object):
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-
     plt.figure()
-
     cam = Camera()
     cam.open()
     cam.set_exposure(1000)
