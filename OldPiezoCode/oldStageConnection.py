@@ -3,6 +3,8 @@ from thorlabs_apt_device import APTDevice
 from thorlabs_apt_device.enums import EndPoint
 from thorlabs_apt_device.enums import LEDMode
 import thorlabs_apt_device.protocol as apt
+import thorlabs_apt_device.protocol.functions as func
+import thorlabs_apt_device.protocol.parsing as parsing
 import logging
 import sys
 #print(apt.devices.aptdevice.list_devices())
@@ -74,12 +76,46 @@ class APTDevice_Piezo(APTDevice):
             print("Outputing Voltage")
             self._log.debug(f"Sets output voltage {voltage} on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
             self._loop.call_soon_threadsafe(self._write, apt.pz_set_outputvolts(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], voltage=voltageOut))
-        elif now == False and (not voltage is None):
+        elif now == False and (voltage is not None):
             self._log.debug(f"Preparing to set output voltage to {voltage} steps [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
             self._loop.call_soon_threadsafe(self._write, apt.mot_set_moveabsparams(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], absolute_position=position))
         else:
             # Don't move now, and no position specified...
             pass
+
+
+    def get_voltage(self, now=True ,bay=0, channel=0):
+        """
+        Perform an absolute move.
+
+        :param position: Movement destination in encoder steps.
+        :param now: Perform movement immediately, or wait for subsequent trigger.
+        :param bay: Index (0-based) of controller bay to send the command.
+        :param channel: Index (0-based) of controller bay channel to send the command.
+        """
+        # data = 0x0645
+        # data_bytes = data.to_bytes(6, byteorder='little')
+        # data = apt.pz_req_outputvolts(dest=EndPoint.USB, source=self.bays[bay], chan_ident=self.channels[channel])
+        data = func._pack(0x0645, EndPoint.USB, self.bays[bay], param1=self.channels[channel])
+        # data = apt.pz_set_outputvolts(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], voltage=50)
+        print("Here's data")
+        print("----------")
+        print(data)
+        print("----------")
+        result = parsing.pz_get_outputvolts(data=data)
+        
+        if now == True:
+            print("Inputting Voltage")
+            self._log.debug(f"Gets voltage {result['voltage']} on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
+            # self._loop.call_soon_threadsafe(self._write, apt.pz_get_outputvolts(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], voltage=voltageOut))
+        elif now == False and (result['voltage'] is not None):
+            self._log.debug(f"Preparing to set output voltage to {result['voltage']} steps [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
+            # self._loop.call_soon_threadsafe(self._write, apt.mot_set_moveabsparams(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], absolute_position=position))
+        else:
+            # Don't move now, and no position specified...
+            pass
+
+
             
     def _process_message(self, m):
         #print("hello")
@@ -123,13 +159,15 @@ class APTDevice_Piezo(APTDevice):
 
 import time
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-piezo1=APTDevice_Piezo(serial_port="COM5",status_updates="auto")
+piezo1=APTDevice_Piezo(serial_port="COM6",status_updates="auto")
 #piezo2=APTDevice_Piezo(serial_port="COM8",status_updates="auto")
 print("hello")
 piezo1.identify(channel=None)
 time.sleep(1)
-piezo1.set_voltage(voltage=50)
+piezo1.set_voltage(voltage=70)
 #piezo2.identify(channel=None)
 time.sleep(5)
+piezo1.get_voltage()
+time.sleep(3)
 #print(piezo.update_message)
 #piezo.set_voltage(50)
