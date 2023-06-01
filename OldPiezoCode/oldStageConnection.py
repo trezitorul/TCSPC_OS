@@ -214,12 +214,13 @@ class APTDevice_Piezo(APTDevice):
 
 
 #logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-piezo1=APTDevice_Piezo(serial_port="COM6",status_updates="auto")
+# COM5 for Ozymandias
+piezo1=APTDevice_Piezo(serial_port="COM5",status_updates="auto")
 #piezo2=APTDevice_Piezo(serial_port="COM8",status_updates="auto")
 piezo1.identify(channel=None)
 
 piezo1.set_maxvoltage(voltage=75)
-# piezo1.get_maxvoltage()
+piezo1.get_maxvoltage()
 
 
 # for i in range(10):
