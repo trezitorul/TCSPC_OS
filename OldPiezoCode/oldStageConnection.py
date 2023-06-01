@@ -151,12 +151,13 @@ class APTDevice_Piezo(APTDevice):
         :param bay: Index (0-based) of controller bay to send the command.
         :param channel: Index (0-based) of controller bay channel to send the command.
         """
-        max_voltage=75
-        voltageOut=int(32767*(voltage/max_voltage))
+        # max_voltage=75
+        # voltageOut=int(32767*(voltage/max_voltage))
         if now == True:
             #print("Outputing Voltage")
             self._log.debug(f"Sets output voltage {voltage} on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
-            self._loop.call_soon_threadsafe(self._write, apt.pz_set_outputmaxvolts(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], voltage=voltageOut))
+            self._loop.call_soon_threadsafe(self._write, apt.pz_set_outputmaxvolts(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], voltage=voltage))
+            time.sleep(0.5)
         elif now == False and (voltage is not None):
             self._log.debug(f"Preparing to set output voltage to {voltage} steps [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
             self._loop.call_soon_threadsafe(self._write, apt.mot_set_moveabsparams(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], absolute_position=position))
@@ -165,9 +166,9 @@ class APTDevice_Piezo(APTDevice):
             pass
             
     def _process_message(self, m):
-
+        
         super()._process_message(m)
-        print(m.msg)
+        print("Processed message: " + m.msg)
         
         # Decode bay and channel IDs and check if they match one of ours
         if m.msg in ():
@@ -213,12 +214,12 @@ class APTDevice_Piezo(APTDevice):
 
 
 #logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-piezo1=APTDevice_Piezo(serial_port="COM4",status_updates="auto")
+piezo1=APTDevice_Piezo(serial_port="COM6",status_updates="auto")
 #piezo2=APTDevice_Piezo(serial_port="COM8",status_updates="auto")
 piezo1.identify(channel=None)
 
 piezo1.set_maxvoltage(voltage=75)
-piezo1.get_maxvoltage()
+# piezo1.get_maxvoltage()
 
 
 # for i in range(10):
