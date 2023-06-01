@@ -39,8 +39,10 @@ qutag = QuTAG_MC.QuTAG()
 # We use the exposure time for the y-axis in the plot 
 na, coincWin, expTime = qutag.getDeviceParams()
 print("Coincidence window",coincWin, "bins, exposure time",expTime, "ms")
+
 cameraFlipperID = "37005411"
 cameraFlipper = MFF101FlipperMirror(cameraFlipperID)
+#mirror.HomeMirror()
 beamBlockFlipperID="37005466"
 beamBlockFlipper = MFF101FlipperMirror(beamBlockFlipperID)
 def getQuTagCounts(channels, exposureTime):
@@ -67,8 +69,8 @@ intergration_t = 0.0005 #Controls Integration Time
 qutag.setExposureTime(int(intergration_t*1000))
 dx = 0.001#Step X resolution
 dy = 0.001 #Step Y resolution 
-spanx = 0.5 #Scan X Width
-spany = 0.5 #Scan Y Width
+spanx = 0.1 #Scan X Width
+spany = 0.1 #Scan Y Width
 n = 0
 tragx, tragxv, tragy, tragyv, x_axis, vx_axis, y_axis, vy_axis, counts = [],[],[], [], [],[],[],[],[]
 nspanx=math.ceil(spanx/dx)

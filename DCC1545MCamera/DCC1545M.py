@@ -25,7 +25,7 @@ class Camera(object):
             self.exposure = None
             self.roi_pos = None
             self.frametime = None
-            self.uc480 = windll.LoadLibrary(uc480_file)
+            self.uc480 = cdll.LoadLibrary(uc480_file)
         else:
             raise CameraOpenError("ThorCam drivers not available.")
 
@@ -37,6 +37,7 @@ class Camera(object):
         self.roi_pos = roi_pos
 
         is_InitCamera = self.uc480.is_InitCamera
+        
         is_InitCamera.argtypes = [POINTER(c_int)]
         self.handle = c_int(0)
         i = is_InitCamera(byref(self.handle))
@@ -71,9 +72,10 @@ class Camera(object):
         # buffer number not yet used
         # if buffer_number is None:
         #    buffer_number = self.epix.pxd_capturedBuffer(1)
-        print(np.frombuffer(self.meminfo[1], c_ubyte))
+        # print(self.meminfo[1])
+        np.frombuffer(self.meminfo[1], c_ubyte)
+        # print("End get_image")
         im = np.frombuffer(self.meminfo[0], c_ubyte).reshape(self.roi_shape[1], self.roi_shape[0])
-
         return im
 
     def get_frame_number(self):
@@ -92,18 +94,20 @@ class Camera(object):
         '''
         buffersize: number of frames to keep in rolling buffer
         '''
+        self.uc480.is_SetExternalTrigger(self.handle, 0)
 
+        # print("test")
         self.uc480.is_CaptureVideo(self.handle, 1)
+        # print(self.handle)
 
-    def start_sequence_capture(self, n_frames):
+    # def start_sequence_capture(self, n_frames):
         # not implemented for thorcam_fs
-        print
-        'sequence capture started'
+        # print
+        # 'sequence capture started'
         # self.epix.pxd_goLiveSeq(0x1,1,n_frames,1,n_frames,1)
 
     def stop_live_capture(self, ):
-        print
-        'unlive now'
+        print('unlive now')
         # self.epix.pxd_goUnLive(0x1)
         self.uc480.is_StopLiveVideo(self.handle, 1)
 
@@ -182,14 +186,14 @@ class Camera(object):
 
 
 if __name__ == '__main__':
-    import matplotlib.pyplot as plt
+    import matplotlib.pyplot as plt 
     plt.figure()
     cam = Camera()
     cam.open()
     cam.set_exposure(1000)
     cam.start_continuous_capture(1)
     time.sleep(1)
-    print(cam.bit_depth)
+    # print(cam.bit_depth)
     img = cam.get_image(1)
     cam.stop_live_capture()
     cam.close()

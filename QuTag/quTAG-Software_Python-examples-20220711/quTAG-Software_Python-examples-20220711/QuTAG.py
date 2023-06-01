@@ -99,7 +99,7 @@ class QuTAG:
         # load DLL -------------------------------------------
         file_path="C:\\Users\\Ozymandias\\Desktop\\quTAG software 8channel version\\quTAG software\\quTAG_MC-Software_Python-examples-20210412\\quTAG_MC-Software_Python-examples-20210412\\64Bit_DLLs"
         dll_name="tdcbase_64bit.dll"
-        self.qutools_dll = ctypes.windll.LoadLibrary( file _path + "\\"+dll_name )
+        self.qutools_dll = ctypes.windll.LoadLibrary( file_path + "\\"+dll_name )
         #print("C:\\Program Files (x86)\\quTools\\Daisy@quTAG-MC\\userlib\\li\\" + dll_name )
         #self.qutools_dll = ctypes.windll.LoadLibrary( "C:\\Program Files (x86)\\quTools\\Daisy@quTAG-MC\\userlib\\lib\\" + dll_name )
         self.declareAPI()
