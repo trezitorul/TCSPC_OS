@@ -51,11 +51,12 @@ class APTDevice_Piezo(APTDevice):
     :param status_updates: Set to ``"auto"``, ``"polled"`` or ``"none"``.
     """
 
-    def __init__(self, serial_port=None, vid=None, pid=None, manufacturer=None, product=None, serial_number=None, location=None, controller=EndPoint.USB, bays=(EndPoint.USB,), channels=(1,), status_updates="polling"):
+    def __init__(self, serial_port=None, vid=None, pid=None, manufacturer=None, product=None, serial_number=None, location=None, controller=EndPoint.USB, bays=(EndPoint.USB,), channels=(1,2), status_updates="polling"):
         super().__init__(serial_port=serial_port, vid=vid, pid=pid, manufacturer=manufacturer, product=product, serial_number=serial_number, location=location, controller=controller, bays=bays, channels=channels, status_updates=status_updates)
         #GET TPZ_IOSETTINGS to set max voltage for stage.
         self.keepalive_message=apt.pz_ack_pzstatusupdate
         self.update_message=apt.pz_req_pzstatusupdate
+        print(channels)
         for bay in self.bays:
             for channel in self.channels:
                 self._loop.call_soon_threadsafe(self._write, apt.pz_req_tpz_iosettings(source=EndPoint.HOST, dest=bay, chan_ident=channel))
@@ -73,7 +74,7 @@ class APTDevice_Piezo(APTDevice):
         max_voltage=75
         voltageOut=int(32767*(voltage/max_voltage))
         if now == True:
-            print("Outputing Voltage")
+            #print("Outputing Voltage")
             self._log.debug(f"Sets output voltage {voltage} on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
             #print(apt.pz_set_outputvolts(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], voltage=voltageOut))
             self._loop.call_soon_threadsafe(self._write, apt.pz_set_outputvolts(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], voltage=voltageOut))
@@ -163,16 +164,20 @@ class APTDevice_Piezo(APTDevice):
 
 import time
 #logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-piezo1=APTDevice_Piezo(serial_port="COM5",status_updates="auto")
+piezo1=APTDevice_Piezo(serial_port="COM7",status_updates="auto")
 #piezo2=APTDevice_Piezo(serial_port="COM8",status_updates="auto")
 piezo1.identify(channel=None)
-i=0
 for i in range(10):
+    for j in range(100):
+        if i%2==0:
+            piezo1.set_voltage(j*70/100, channel=0)
+            print(j*70/100)
+        else:
+            piezo1.set_voltage(70-j*70/100, channel=0)
+            print(70-j*70/100)
+        #piezo1.get_voltage(channel=1)
+        time.sleep(0.1)
 
-    piezo1.set_voltage(70*(i%2))
-    piezo1.get_voltage(channel=0)
-    time.sleep(1)
-    i+=1
 #time.sleep(1)
 #piezo1.set_voltage(voltage=70)
 #piezo2.identify(channel=None)
