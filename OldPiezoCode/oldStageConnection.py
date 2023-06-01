@@ -6,6 +6,7 @@ import thorlabs_apt_device.protocol as apt
 import thorlabs_apt_device.protocol.functions as func
 import logging
 import sys
+import asyncio
 #print(apt.devices.aptdevice.list_devices())
 #info =apt.devices.aptdevice.list_devices()[-1]
 #piezo1=apt.devices.aptdevice.APTDevice(serial_port="COM7")
@@ -58,7 +59,7 @@ class APTDevice_Piezo(APTDevice):
         for bay in self.bays:
             for channel in self.channels:
                 self._loop.call_soon_threadsafe(self._write, apt.pz_req_tpz_iosettings(source=EndPoint.HOST, dest=bay, chan_ident=channel))
-
+        self.voltage=0
 
     def set_voltage(self, voltage=None, now=True ,bay=0, channel=0):
         """
@@ -74,6 +75,7 @@ class APTDevice_Piezo(APTDevice):
         if now == True:
             print("Outputing Voltage")
             self._log.debug(f"Sets output voltage {voltage} on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
+            #print(apt.pz_set_outputvolts(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], voltage=voltageOut))
             self._loop.call_soon_threadsafe(self._write, apt.pz_set_outputvolts(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], voltage=voltageOut))
         elif now == False and (voltage is not None):
             self._log.debug(f"Preparing to set output voltage to {voltage} steps [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
@@ -96,9 +98,15 @@ class APTDevice_Piezo(APTDevice):
 
         
         if now == True:
-            print("Outputting Voltage")
+            print("Requesting Voltage")
             self._log.debug(f"Gets voltage on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
-            self._loop.call_soon_threadsafe(self._write, apt.pz_req_outputvolts(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel]))
+            #print(apt.pz_req_outputvolts(source=EndPoint.HOST, dest=self.bays[bay], chan_ident=self.channels[channel]))
+            self._loop.call_soon_threadsafe(self._write, apt.pz_req_outputvolts(source=EndPoint.HOST, dest=self.bays[bay], chan_ident=self.channels[channel]))
+            print("waiting for voltage")
+            time.sleep(0.1)
+            print("VOLTAGEFROMCOMMAND")
+            print(self.voltage)
+
         elif now == False:
             self._log.debug(f"Preparing to set output voltage steps [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
             # self._loop.call_soon_threadsafe(self._write, apt.mot_set_moveabsparams(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], absolute_position=position))
@@ -106,11 +114,11 @@ class APTDevice_Piezo(APTDevice):
             # Don't move now, and no position specified...
             pass
 
-
+        return self.voltage
             
     def _process_message(self, m):
         #print("hello")
-        print(m.msg)
+        #print(m.msg)
         super()._process_message(m)
         
         # Decode bay and channel IDs and check if they match one of ours
@@ -137,29 +145,37 @@ class APTDevice_Piezo(APTDevice):
                     self._log.warn(f"Message {m.msg} has unrecognised channel={m.chan_ident}.")
                     channel_i = 0
                     #return
-        
+        if m.msg == "pz_get_outputvolts":
+            self.voltage=m.voltage
+            print(m.msg)
+            #time.sleep(1)
         # Act on each message type
-        if m.msg in ("pz_get_pzstatusupdate", "mot_get_outputvolts", "mot_move_stopped", "mot_move_completed"):
+        elif m.msg == "pz_get_pzstatusupdate":
             # DC motor status update message    
-            #print(m._asdict())
-            print(m.output_voltage)
+            #print(m.output_voltage)
+            #print(m.output_voltage)
             #self.status_[bay_i][channel_i].update(m._asdict())
+            None
 
         else:
             #self._log.debug(f"Received message (unhandled): {m}")
             pass
 
 import time
-logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-piezo1=APTDevice_Piezo(serial_port="COM4",status_updates="auto")
+#logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+piezo1=APTDevice_Piezo(serial_port="COM5",status_updates="auto")
 #piezo2=APTDevice_Piezo(serial_port="COM8",status_updates="auto")
-print("hello")
 piezo1.identify(channel=None)
+i=0
+for i in range(10):
+
+    piezo1.set_voltage(70*(i%2))
+    piezo1.get_voltage(channel=0)
+    time.sleep(1)
+    i+=1
 #time.sleep(1)
 #piezo1.set_voltage(voltage=70)
 #piezo2.identify(channel=None)
 #time.sleep(5)
-piezo1.get_voltage()
-time.sleep(3)
 #print(piezo.update_message)
 #piezo.set_voltage(50)
