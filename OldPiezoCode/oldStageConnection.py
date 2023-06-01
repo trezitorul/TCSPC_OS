@@ -7,6 +7,7 @@ import thorlabs_apt_device.protocol.functions as func
 import logging
 import sys
 import asyncio
+import time
 #print(apt.devices.aptdevice.list_devices())
 #info =apt.devices.aptdevice.list_devices()[-1]
 #piezo1=apt.devices.aptdevice.APTDevice(serial_port="COM7")
@@ -56,7 +57,7 @@ class APTDevice_Piezo(APTDevice):
         #GET TPZ_IOSETTINGS to set max voltage for stage.
         self.keepalive_message=apt.pz_ack_pzstatusupdate
         self.update_message=apt.pz_req_pzstatusupdate
-        print(channels)
+        #print(channels)
         for bay in self.bays:
             for channel in self.channels:
                 self._loop.call_soon_threadsafe(self._write, apt.pz_req_tpz_iosettings(source=EndPoint.HOST, dest=bay, chan_ident=channel))
@@ -116,11 +117,57 @@ class APTDevice_Piezo(APTDevice):
             pass
 
         return self.voltage
+    
+    def get_maxvoltage(self, now=True ,bay=0, channel=0):
+        """
+        Get max voltage.
+
+        :param position: Movement destination in encoder steps.
+        :param now: Perform movement immediately, or wait for subsequent trigger.
+        :param bay: Index (0-based) of controller bay to send the command.
+        :param channel: Index (0-based) of controller bay channel to send the command.
+        """
+    
+
+        
+        if now == True:
+            print("Requesting Max Voltage")
+            self._log.debug(f"Gets max voltage on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
+            self._loop.call_soon_threadsafe(self._write, apt.pz_req_outputmaxvolts(source=EndPoint.HOST, dest=self.bays[bay], chan_ident=self.channels[channel]))
+
+        elif now == False:
+            self._log.debug(f"Preparing to set output voltage steps [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
+            # self._loop.call_soon_threadsafe(self._write, apt.mot_set_moveabsparams(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], absolute_position=position))
+        else:
+            # Don't move now, and no position specified...
+            pass
+
+    def set_maxvoltage(self, voltage=None, now=True ,bay=0, channel=0):
+        """
+        Set max voltage.
+
+        :param position: Movement destination in encoder steps.
+        :param now: Perform movement immediately, or wait for subsequent trigger.
+        :param bay: Index (0-based) of controller bay to send the command.
+        :param channel: Index (0-based) of controller bay channel to send the command.
+        """
+        max_voltage=75
+        voltageOut=int(32767*(voltage/max_voltage))
+        if now == True:
+            #print("Outputing Voltage")
+            self._log.debug(f"Sets output voltage {voltage} on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
+            self._loop.call_soon_threadsafe(self._write, apt.pz_set_outputmaxvolts(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], voltage=voltageOut))
+        elif now == False and (voltage is not None):
+            self._log.debug(f"Preparing to set output voltage to {voltage} steps [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
+            self._loop.call_soon_threadsafe(self._write, apt.mot_set_moveabsparams(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], absolute_position=position))
+        else:
+            # Don't move now, and no position specified...
+            pass
             
     def _process_message(self, m):
-        #print("hello")
-        #print(m.msg)
+
         super()._process_message(m)
+        print(m.msg)
         
         # Decode bay and channel IDs and check if they match one of ours
         if m.msg in ():
@@ -151,7 +198,9 @@ class APTDevice_Piezo(APTDevice):
             print(m.msg)
             #time.sleep(1)
         # Act on each message type
-        elif m.msg == "pz_get_pzstatusupdate":
+        elif m.msg == "pz_get_outputmaxvolts":
+            print(m.msg)
+        elif m.msg == "pz_get_pzstatusupdate0":
             # DC motor status update message    
             #print(m.output_voltage)
             #print(m.output_voltage)
@@ -162,21 +211,26 @@ class APTDevice_Piezo(APTDevice):
             #self._log.debug(f"Received message (unhandled): {m}")
             pass
 
-import time
+
 #logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-piezo1=APTDevice_Piezo(serial_port="COM7",status_updates="auto")
+piezo1=APTDevice_Piezo(serial_port="COM4",status_updates="auto")
 #piezo2=APTDevice_Piezo(serial_port="COM8",status_updates="auto")
 piezo1.identify(channel=None)
-for i in range(10):
-    for j in range(100):
-        if i%2==0:
-            piezo1.set_voltage(j*70/100, channel=0)
-            print(j*70/100)
-        else:
-            piezo1.set_voltage(70-j*70/100, channel=0)
-            print(70-j*70/100)
-        #piezo1.get_voltage(channel=1)
-        time.sleep(0.1)
+
+piezo1.set_maxvoltage(voltage=75)
+piezo1.get_maxvoltage()
+
+
+# for i in range(10):
+#     for j in range(100):
+#         if i%2==0:
+#             piezo1.set_voltage(j*70/100, channel=0)
+#             print(j*70/100)
+#         else:
+#             piezo1.set_voltage(70-j*70/100, channel=0)
+#             print(70-j*70/100)
+#         #piezo1.get_voltage(channel=1)
+#         time.sleep(0.1)
 
 #time.sleep(1)
 #piezo1.set_voltage(voltage=70)
