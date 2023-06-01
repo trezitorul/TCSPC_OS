@@ -168,7 +168,7 @@ class APTDevice_Piezo(APTDevice):
     def _process_message(self, m):
         
         super()._process_message(m)
-        print("Processed message: " + m.msg)
+        print(m)
         
         # Decode bay and channel IDs and check if they match one of ours
         if m.msg in ():
@@ -215,7 +215,7 @@ class APTDevice_Piezo(APTDevice):
 
 #logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 # COM5 for Ozymandias
-piezo1=APTDevice_Piezo(serial_port="COM5",status_updates="auto")
+piezo1=APTDevice_Piezo(serial_port="COM6",status_updates="auto")
 #piezo2=APTDevice_Piezo(serial_port="COM8",status_updates="auto")
 piezo1.identify(channel=None)
 
