@@ -3,7 +3,7 @@ from thorlabs_apt_device import APTDevice
 from thorlabs_apt_device.enums import EndPoint
 from thorlabs_apt_device.enums import LEDMode
 import thorlabs_apt_device.protocol as apt
-import thorlabs_apt_device.protocol.functions as func
+import serial.tools.list_ports
 import logging
 import sys
 import asyncio
@@ -245,22 +245,30 @@ class APTDevice_Piezo(APTDevice):
             pass
 
 
+
 #logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 # COM5 for Ozymandias
-piezo1=APTDevice_Piezo(serial_port="COM5",status_updates="auto")
-#piezo2=APTDevice_Piezo(serial_port="COM8",status_updates="auto")
-#piezo1.identify(channel=0)
-piezo1.get_voltage()
-piezo1.set_ChannelState(state=1)
-time.sleep(1)
-piezo1.get_ChannelState()
-time.sleep(2)
-piezo1.set_ChannelState(state=2)
-piezo1.get_ChannelState()
-piezo1.set_maxvoltage(voltage=75)
-piezo1.get_maxvoltage()
+ports = list(serial.tools.list_ports.comports())
+for p in ports:
+    if "APT" in p.description:
+        print(p.pid)
+        comPort = p.name
 
-time.sleep(2)
+piezo1=APTDevice_Piezo(serial_port=comPort,status_updates="auto")
+
+# piezo1.identify(channel=0)
+
+# piezo1.get_voltage()
+# piezo1.set_ChannelState(state=1)
+# time.sleep(1)
+# piezo1.get_ChannelState()
+# time.sleep(2)
+# piezo1.set_ChannelState(state=2)
+# piezo1.get_ChannelState()
+# piezo1.set_maxvoltage(voltage=75)
+# piezo1.get_maxvoltage()
+
+# time.sleep(2)
 
 # for i in range(10):
 #     for j in range(100):
@@ -273,9 +281,9 @@ time.sleep(2)
 #         #piezo1.get_voltage(channel=1)
 #         time.sleep(0.1)
 
-#time.sleep(1)
-#piezo1.set_voltage(voltage=70)
-#piezo2.identify(channel=None)
-#time.sleep(5)
-#print(piezo.update_message)
-#piezo.set_voltage(50)
+# time.sleep(1)
+# piezo1.set_voltage(voltage=70)
+# piezo2.identify(channel=None)
+# time.sleep(5)
+# print(piezo.update_message)
+# piezo.set_voltage(50)
