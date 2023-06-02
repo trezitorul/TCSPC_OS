@@ -52,7 +52,7 @@ class APTDevice_Piezo(APTDevice):
     :param status_updates: Set to ``"auto"``, ``"polled"`` or ``"none"``.
     """
 
-    def __init__(self, serial_port=None, vid=None, pid=None, manufacturer=None, product=None, serial_number=None, location=None, controller=EndPoint.USB, bays=(EndPoint.USB,), channels=(1,2), status_updates="polling"):
+    def __init__(self, serial_port=None, vid=None, pid=None, manufacturer=None, product=None, serial_number=None, location=None, controller=EndPoint.HOST, bays=(EndPoint.USB,), channels=(1,2), status_updates="polling"):
         super().__init__(serial_port=serial_port, vid=vid, pid=pid, manufacturer=manufacturer, product=product, serial_number=serial_number, location=location, controller=controller, bays=bays, channels=channels, status_updates=status_updates)
         #GET TPZ_IOSETTINGS to set max voltage for stage.
         self.keepalive_message=apt.pz_ack_pzstatusupdate
@@ -62,6 +62,35 @@ class APTDevice_Piezo(APTDevice):
             for channel in self.channels:
                 self._loop.call_soon_threadsafe(self._write, apt.pz_req_tpz_iosettings(source=EndPoint.HOST, dest=bay, chan_ident=channel))
         self.voltage=0
+      #  self.chan[0]=False
+    
+    def get_ChannelState(self, now=True, bay=0, channel=0):
+        if now == True:
+            #print("Outputing Voltage")
+            self._log.debug(f"Get Channel {channel} state on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
+            #print(apt.pz_set_outputvolts(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], voltage=voltageOut))
+            self._loop.call_soon_threadsafe(self._write, apt.mod_req_chanenablestate(source=EndPoint.HOST, dest=self.bays[bay], chan_ident=self.channels[channel]))
+        elif now == False and (voltage is not None):
+            self._log.debug(f"Preparing to set output voltage to {voltage} steps [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
+            self._loop.call_soon_threadsafe(self._write, apt.mot_set_moveabsparams(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], absolute_position=position))
+        else:
+            # Don't move now, and no position specified...
+            pass
+
+    def set_ChannelState(self, now=True, bay=0, channel=0, state=0):
+        print("Set Channel State to " + str(state))
+        if now == True:
+            #print("Outputing Voltage")
+            self._log.debug(f"Get Channel {channel} state on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
+            #print(apt.pz_set_outputvolts(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], voltage=voltageOut))
+            self._loop.call_soon_threadsafe(self._write, apt.mod_set_chanenablestate(source=EndPoint.HOST, dest=EndPoint.USB, chan_ident=self.channels[channel], enable_state=state))
+        elif now == False and (voltage is not None):
+            self._log.debug(f"Preparing to set output voltage to {voltage} steps [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
+            self._loop.call_soon_threadsafe(self._write, apt.mot_set_moveabsparams(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], absolute_position=position))
+        else:
+            # Don't move now, and no position specified...
+            pass
+
 
     def set_voltage(self, voltage=None, now=True ,bay=0, channel=0):
         """
@@ -132,6 +161,7 @@ class APTDevice_Piezo(APTDevice):
         
         if now == True:
             print("Requesting Max Voltage")
+            print(apt.pz_req_outputmaxvolts(source=EndPoint.HOST, dest=self.bays[bay], chan_ident=self.channels[channel]))
             self._log.debug(f"Gets max voltage on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
             self._loop.call_soon_threadsafe(self._write, apt.pz_req_outputmaxvolts(source=EndPoint.HOST, dest=self.bays[bay], chan_ident=self.channels[channel]))
 
@@ -156,6 +186,7 @@ class APTDevice_Piezo(APTDevice):
         if now == True:
             #print("Outputing Voltage")
             self._log.debug(f"Sets output voltage {voltage} on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
+            print(apt.pz_set_outputmaxvolts(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], voltage=voltage))
             self._loop.call_soon_threadsafe(self._write, apt.pz_set_outputmaxvolts(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], voltage=voltage))
             time.sleep(0.5)
         elif now == False and (voltage is not None):
@@ -168,7 +199,7 @@ class APTDevice_Piezo(APTDevice):
     def _process_message(self, m):
         
         super()._process_message(m)
-        print(m)
+        print(m.msg)
         
         # Decode bay and channel IDs and check if they match one of ours
         if m.msg in ():
@@ -207,7 +238,8 @@ class APTDevice_Piezo(APTDevice):
             #print(m.output_voltage)
             #self.status_[bay_i][channel_i].update(m._asdict())
             None
-
+        elif m.msg=="mod_get_chanenablestate":
+            print(m)
         else:
             #self._log.debug(f"Received message (unhandled): {m}")
             pass
@@ -215,13 +247,20 @@ class APTDevice_Piezo(APTDevice):
 
 #logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 # COM5 for Ozymandias
-piezo1=APTDevice_Piezo(serial_port="COM6",status_updates="auto")
+piezo1=APTDevice_Piezo(serial_port="COM5",status_updates="auto")
 #piezo2=APTDevice_Piezo(serial_port="COM8",status_updates="auto")
-piezo1.identify(channel=None)
-
+#piezo1.identify(channel=0)
+piezo1.get_voltage()
+piezo1.set_ChannelState(state=1)
+time.sleep(1)
+piezo1.get_ChannelState()
+time.sleep(2)
+piezo1.set_ChannelState(state=2)
+piezo1.get_ChannelState()
 piezo1.set_maxvoltage(voltage=75)
 piezo1.get_maxvoltage()
 
+time.sleep(2)
 
 # for i in range(10):
 #     for j in range(100):
