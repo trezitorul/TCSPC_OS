@@ -3,6 +3,7 @@ from thorlabs_apt_device import APTDevice
 from thorlabs_apt_device.enums import EndPoint
 from thorlabs_apt_device.enums import LEDMode
 import thorlabs_apt_device.protocol as apt
+
 import serial.tools.list_ports
 import logging
 import sys
@@ -61,7 +62,10 @@ class APTDevice_Piezo(APTDevice):
         for bay in self.bays:
             for channel in self.channels:
                 self._loop.call_soon_threadsafe(self._write, apt.pz_req_tpz_iosettings(source=EndPoint.HOST, dest=bay, chan_ident=channel))
-        self.voltage=0
+        self.voltage = 0
+        self.mode = 0
+        self.state = False
+        self.travel = 0
       #  self.chan[0]=False
     
     def get_ChannelState(self, now=True, bay=0, channel=0):
@@ -76,8 +80,10 @@ class APTDevice_Piezo(APTDevice):
         else:
             # Don't move now, and no position specified...
             pass
+        
+        return self.state
 
-    def set_ChannelState(self, now=True, bay=0, channel=0, state=0):
+    def set_ChannelState(self, now=True, bay=0, channel=0, state=1):
         print("Set Channel State to " + str(state))
         if now == True:
             #print("Outputing Voltage")
@@ -91,6 +97,31 @@ class APTDevice_Piezo(APTDevice):
             # Don't move now, and no position specified...
             pass
 
+    def set_controlMode(self, now=True, bay=0, channel=0, mode=1):
+        # 0x01 Open Loop (no feedback)
+        # 0x02 Closed Loop (feedback employed)
+        # 0x03 Open Loop Smooth
+        # 0x04 Closed Loop Smooth
+        print("Set Mode to " + str(mode))
+        if now == True:
+            #print("Outputing Voltage")
+            self._log.debug(f"Get Channel {channel} mode on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
+            #print(apt.pz_set_outputvolts(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], voltage=voltageOut))
+            self._loop.call_soon_threadsafe(self._write, apt.pz_set_positioncontrolmode(source=EndPoint.HOST, dest=EndPoint.USB, chan_ident=self.channels[channel], mode=mode))
+        else:
+            # Don't move now, and no position specified...
+            pass
+    
+    def get_controlMode(self, now=True, bay=0, channel=0):
+        if now == True:
+            #print("Outputing Voltage")
+            self._log.debug(f"Get Channel {channel} state on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
+            #print(apt.pz_set_outputvolts(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], voltage=voltageOut))
+            self._loop.call_soon_threadsafe(self._write, apt.pz_req_positioncontrolmode(source=EndPoint.HOST, dest=self.bays[bay], chan_ident=self.channels[channel]))
+        else:
+            pass
+        
+        return self.mode
 
     def set_voltage(self, voltage=None, now=True ,bay=0, channel=0):
         """
@@ -125,8 +156,6 @@ class APTDevice_Piezo(APTDevice):
         :param bay: Index (0-based) of controller bay to send the command.
         :param channel: Index (0-based) of controller bay channel to send the command.
         """
-    
-
         
         if now == True:
             print("Requesting Voltage")
@@ -147,6 +176,32 @@ class APTDevice_Piezo(APTDevice):
 
         return self.voltage
     
+    def get_position(self, now=True ,bay=0, channel=0):
+        """
+        Get position.
+
+        :param position: Movement destination in encoder steps.
+        :param now: Perform movement immediately, or wait for subsequent trigger.
+        :param bay: Index (0-based) of controller bay to send the command.
+        :param channel: Index (0-based) of controller bay channel to send the command.
+        """
+        
+        if now == True:
+            print("Requesting position")
+            self._log.debug(f"Gets position on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
+            #print(apt.pz_req_outputvolts(source=EndPoint.HOST, dest=self.bays[bay], chan_ident=self.channels[channel]))
+            self._loop.call_soon_threadsafe(self._write, apt.pz_req_maxtravel(source=EndPoint.HOST, dest=self.bays[bay], chan_ident=self.channels[channel]))
+
+        elif now == False:
+            self._log.debug(f"Preparing to set output position steps [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
+            # self._loop.call_soon_threadsafe(self._write, apt.mot_set_moveabsparams(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], absolute_position=position))
+        else:
+            # Don't move now, and no position specified...
+            pass
+
+        return self.travel
+    
+    
     def get_maxvoltage(self, now=True ,bay=0, channel=0):
         """
         Get max voltage.
@@ -155,8 +210,7 @@ class APTDevice_Piezo(APTDevice):
         :param now: Perform movement immediately, or wait for subsequent trigger.
         :param bay: Index (0-based) of controller bay to send the command.
         :param channel: Index (0-based) of controller bay channel to send the command.
-        """
-    
+        """    
 
         
         if now == True:
@@ -230,6 +284,11 @@ class APTDevice_Piezo(APTDevice):
             print(m.msg)
             #time.sleep(1)
         # Act on each message type
+        elif m.msg == "pz_get_maxtravel":
+            self.travel = m.travel
+            time.sleep(3)
+            print(m.travel)
+            
         elif m.msg == "pz_get_outputmaxvolts":
             print(m.msg)
         elif m.msg == "pz_get_pzstatusupdate0":
@@ -239,7 +298,13 @@ class APTDevice_Piezo(APTDevice):
             #self.status_[bay_i][channel_i].update(m._asdict())
             None
         elif m.msg=="mod_get_chanenablestate":
+            self.state = m.enabled
             print(m)
+            
+        elif m.msg=="pz_get_positioncontrolmode":
+            self.mode = m.mode
+            print(m)
+            
         else:
             #self._log.debug(f"Received message (unhandled): {m}")
             pass
@@ -251,12 +316,16 @@ class APTDevice_Piezo(APTDevice):
 ports = list(serial.tools.list_ports.comports())
 for p in ports:
     if "APT" in p.description:
-        print(p.pid)
         comPort = p.name
 
 piezo1=APTDevice_Piezo(serial_port=comPort,status_updates="auto")
 
 # piezo1.identify(channel=0)
+
+# piezo1.set_voltage(40, channel=0)
+# time.sleep(1)
+piezo1.get_position()
+time.sleep(5)
 
 # piezo1.get_voltage()
 # piezo1.set_ChannelState(state=1)
