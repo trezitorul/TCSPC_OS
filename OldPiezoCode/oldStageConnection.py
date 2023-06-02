@@ -65,7 +65,8 @@ class APTDevice_Piezo(APTDevice):
         self.voltage = 0
         self.mode = 0
         self.state = False
-        self.travel = 0
+        self.maxTravel = 0
+        self.position = 0
       #  self.chan[0]=False
     
     def get_ChannelState(self, now=True, bay=0, channel=0):
@@ -176,7 +177,7 @@ class APTDevice_Piezo(APTDevice):
 
         return self.voltage
     
-    def get_position(self, now=True ,bay=0, channel=0):
+    def get_maxTravel(self, now=True ,bay=0, channel=0):
         """
         Get position.
 
@@ -187,20 +188,66 @@ class APTDevice_Piezo(APTDevice):
         """
         
         if now == True:
-            print("Requesting position")
-            self._log.debug(f"Gets position on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
+            print("Requesting maxTravel")
+            self._log.debug(f"Gets maxTravel on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
             #print(apt.pz_req_outputvolts(source=EndPoint.HOST, dest=self.bays[bay], chan_ident=self.channels[channel]))
             self._loop.call_soon_threadsafe(self._write, apt.pz_req_maxtravel(source=EndPoint.HOST, dest=self.bays[bay], chan_ident=self.channels[channel]))
+            time.sleep(0.1)
 
-        elif now == False:
-            self._log.debug(f"Preparing to set output position steps [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
+        # elif now == False:
+        #     self._log.debug(f"Preparing to set output position steps [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
             # self._loop.call_soon_threadsafe(self._write, apt.mot_set_moveabsparams(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], absolute_position=position))
         else:
             # Don't move now, and no position specified...
             pass
 
-        return self.travel
+        return self.maxTravel
     
+    # Only works in closed loop mode
+    def set_position(self, position=None, now=True ,bay=0, channel=0):
+        """
+        Perform an absolute move.
+
+        :param position: Movement destination in encoder steps.
+        :param now: Perform movement immediately, or wait for subsequent trigger.
+        :param bay: Index (0-based) of controller bay to send the command.
+        :param channel: Index (0-based) of controller bay channel to send the command.
+        """
+        #max = self.get_maxTravel()
+        max=200
+        position=int(32767.0*position/max)
+
+        # For some reason it sets it 47 higher than it should when you call set so we adjusted, it's stupid. Also cannot be successfully set to a number less than 47.
+        if position > 47:
+            positionOut = position - 47
+        else:
+            positionOut = position
+        if now == True:
+            self._log.debug(f"Sets position {position} on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
+            #print(apt.pz_set_outputvolts(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], position=voltageOut))
+            self._loop.call_soon_threadsafe(self._write, apt.pz_set_outputpos(source=EndPoint.HOST, dest=self.bays[bay], chan_ident=self.channels[channel], position=positionOut))
+        else:
+            # Don't move now, and no position specified...
+            pass
+
+    def get_position(self, now=True ,bay=0, channel=0):
+        """
+        Perform an absolute move.
+
+        :param position: Movement destination in encoder steps.
+        :param now: Perform movement immediately, or wait for subsequent trigger.
+        :param bay: Index (0-based) of controller bay to send the command.
+        :param channel: Index (0-based) of controller bay channel to send the command.
+        """
+        if now == True:
+            self._log.debug(f"Sets position on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
+            #print(apt.pz_set_outputvolts(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], position=voltageOut))
+            self._loop.call_soon_threadsafe(self._write, apt.pz_req_outputpos(source=EndPoint.HOST, dest=self.bays[bay], chan_ident=self.channels[channel]))
+        else:
+            # Don't move now, and no position specified...
+            pass
+
+        return self.position
     
     def get_maxvoltage(self, now=True ,bay=0, channel=0):
         """
@@ -253,7 +300,7 @@ class APTDevice_Piezo(APTDevice):
     def _process_message(self, m):
         
         super()._process_message(m)
-        print(m.msg)
+        # print(m.msg)
         
         # Decode bay and channel IDs and check if they match one of ours
         if m.msg in ():
@@ -285,18 +332,22 @@ class APTDevice_Piezo(APTDevice):
             #time.sleep(1)
         # Act on each message type
         elif m.msg == "pz_get_maxtravel":
-            self.travel = m.travel
-            time.sleep(3)
-            print(m.travel)
+            self.maxTravel = m.travel
             
+        elif m.msg == "pz_get_outputpos":
+            self.position = m.position
+            print(m)
+
         elif m.msg == "pz_get_outputmaxvolts":
             print(m.msg)
+
         elif m.msg == "pz_get_pzstatusupdate0":
             # DC motor status update message    
             #print(m.output_voltage)
             #print(m.output_voltage)
             #self.status_[bay_i][channel_i].update(m._asdict())
             None
+
         elif m.msg=="mod_get_chanenablestate":
             self.state = m.enabled
             print(m)
@@ -322,10 +373,32 @@ piezo1=APTDevice_Piezo(serial_port=comPort,status_updates="auto")
 
 # piezo1.identify(channel=0)
 
-# piezo1.set_voltage(40, channel=0)
+piezo1.set_controlMode(mode=4)
+time.sleep(1)
+piezo1.get_controlMode()
 # time.sleep(1)
-piezo1.get_position()
-time.sleep(5)
+# piezo1.set_voltage(30)
+# time.sleep(10)
+# for i in range(10):
+#     if i%2==0:
+#         piezo1.set_position(position=200)
+#     else:
+#         piezo1.set_position(position=0)
+#     time.sleep(0.5)
+#     piezo1.get_position()
+#     time.sleep(5)
+
+for i in range(10):
+    for j in range(100):
+        print("---------------------")
+        if i%2==0:
+            piezo1.set_position(j*200/100, channel=0)
+            print(j*200/100)
+        else:
+            piezo1.set_position(200-j*200/100, channel=0)
+            print(200-j*200/100)
+        time.sleep(0.1)
+        piezo1.get_position()
 
 # piezo1.get_voltage()
 # piezo1.set_ChannelState(state=1)
@@ -347,12 +420,12 @@ time.sleep(5)
 #         else:
 #             piezo1.set_voltage(70-j*70/100, channel=0)
 #             print(70-j*70/100)
-#         #piezo1.get_voltage(channel=1)
+#         piezo1.get_voltage()
 #         time.sleep(0.1)
 
-# time.sleep(1)
-# piezo1.set_voltage(voltage=70)
-# piezo2.identify(channel=None)
+# piezo1.set_voltage(voltage=75)
+# time.sleep(5)
+# piezo1.get_voltage()
 # time.sleep(5)
 # print(piezo.update_message)
 # piezo.set_voltage(50)
