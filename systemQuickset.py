@@ -11,8 +11,8 @@ cameraFlipper = MFF101FlipperMirror(cameraFlipperID)
 beamBlockFlipperID = "37005466"
 beamBlockFlipper = MFF101FlipperMirror(beamBlockFlipperID)
 
-cameraFlipper.SetMode("off")
-beamBlockFlipper.SetMode("off")
+cameraFlipper.SetMode("on")
+beamBlockFlipper.SetMode("on")
 #time.sleep(1)
 lac = LAC()
 time.sleep(1)

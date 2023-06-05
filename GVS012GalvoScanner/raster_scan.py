@@ -19,8 +19,9 @@ sys.path.append("C:\\Users\\Ozymandias\\TCSPC_project\\MFF101FlipperMirror")
 from LAC import LAC
 from MFF101FlipperMirror import MFF101FlipperMirror
 cameraFlipperID = "37005411"
-cccameraFlipper = MFF101FlipperMirror(cameraFlipperID)
+cameraFlipper = MFF101FlipperMirror(cameraFlipperID)
 #mirror.HomeMirror()
+time.sleep(1)
 beamBlockFlipperID="37005466"
 beamBlockFlipper = MFF101FlipperMirror(beamBlockFlipperID)
 

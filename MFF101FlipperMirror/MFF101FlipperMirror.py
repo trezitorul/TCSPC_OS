@@ -58,7 +58,7 @@ class MFF101FlipperMirror:
 '''
 basic demo
 '''
-deviceID = "37005466"
-Mirror = MFF101FlipperMirror(deviceID)
-Mirror.HomeMirror()
-Mirror.SetMode("off")
+#deviceID = "37005466"
+#Mirror = MFF101FlipperMirror(deviceID)
+#Mirror.HomeMirror()
+#Mirror.SetMode("on")
