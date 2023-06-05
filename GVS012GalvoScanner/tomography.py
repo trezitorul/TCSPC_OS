@@ -18,7 +18,7 @@ sys.path.append("C:\\Users\\Ozymandias\\TCSPC_project\\QuTag\\quTAG_MC-Software_
 sys.path.append("C:\\Users\\Ozymandias\\TCSPC_project\\LAC")
 sys.path.append("C:\\Users\\Ozymandias\\TCSPC_project\\MFF101FlipperMirror")
 sys.path.append("C:\\Users\\Ozymandias\\TCSPC_project\\OldPiezoCode")
-from oldStageConnection import APTDevice_Piezo
+from APTDevice_Piezo import APTDevice_Piezo
 from LAC import LAC
 from MFF101FlipperMirror import MFF101FlipperMirror
 

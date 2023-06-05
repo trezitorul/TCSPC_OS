@@ -168,7 +168,7 @@ class APTDevice_Piezo(APTDevice):
         self._log.debug(f"Sets output voltage {voltage} on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
         self._loop.call_soon_threadsafe(self._write, apt.pz_set_outputvolts(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], voltage=voltageOut))
 
-    def get_voltage(self, bay=0, channel=0, blocking=True):
+    def get_voltage(self, bay=0, channel=0, timeOut=10):
         """
         Get the piezo voltage.
 
@@ -181,12 +181,11 @@ class APTDevice_Piezo(APTDevice):
         
         self._log.debug(f"Gets voltage on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
         self._loop.call_soon_threadsafe(self._write, apt.pz_req_outputvolts(source=EndPoint.HOST, dest=self.bays[bay], chan_ident=self.channels[channel]))
-        if blocking:
-            self.voltage_event.wait()
-            self.voltage_event.clear()
-            return self.voltage
-        else:
-            return self.voltage
+
+        self.voltage_event.wait(timeout=timeOut)
+        self.voltage_event.clear()
+        return self.voltage
+
 
 
 
@@ -373,27 +372,27 @@ class APTDevice_Piezo(APTDevice):
 #logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 # COM5 for Ozymandias
 # Auto connect to COM port
-ports = list(serial.tools.list_ports.comports())
-for p in ports:
-    if "APT" in p.description:
-        comPort = p.name
-#31xxxxx is the zaxis
-#0 is xy axes
-piezo1=APTDevice_Piezo(deviceID="0",status_updates="none")
-#piezo1=APTDevice_Piezo(deviceID="31808608",status_updates="none")
-# piezo1.set_ChannelState(state=1)
-#piezo1.get_serial()
-piezo1.set_ChannelState(state=1, channel=1)
-for i in range(10):
-    for j in range(1000):
-        if i%2==0:
-            piezo1.set_voltage(j*70/1000, channel=1)
-            #print(j*70/100)
-        else:
-            piezo1.set_voltage(70-j*70/1000, channel=1)
-            #print(70-j*70/100)
-        #print(piezo1.get_voltage(blocking=False))
-        time.sleep(0.1)
+# ports = list(serial.tools.list_ports.comports())
+# for p in ports:
+#     if "APT" in p.description:
+#         comPort = p.name
+# #31xxxxx is the zaxis
+# #0 is xy axes
+# piezo1=APTDevice_Piezo(deviceID="0",status_updates="none")
+# #piezo1=APTDevice_Piezo(deviceID="31808608",status_updates="none")
+# # piezo1.set_ChannelState(state=1)
+# #piezo1.get_serial()
+# piezo1.set_ChannelState(state=1, channel=1)
+# for i in range(10):
+#     for j in range(1000):
+#         if i%2==0:
+#             piezo1.set_voltage(j*70/1000, channel=1)
+#             #print(j*70/100)
+#         else:
+#             piezo1.set_voltage(70-j*70/1000, channel=1)
+#             #print(70-j*70/100)
+#         print(piezo1.get_voltage(timeOut=0))
+#         time.sleep(0.1)
 
 
 
