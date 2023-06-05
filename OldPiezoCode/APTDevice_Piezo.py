@@ -168,7 +168,7 @@ class APTDevice_Piezo(APTDevice):
 
     def set_voltage(self, voltage=None, bay=0, channel=0):
         """
-        Set the piezo voltage.
+        Set the piezo voltage. Must be in Open Loop Mode, and must be manually set to this mode beforehand in the main or it will not work.
 
         :param voltage: Set current voltage as an integer in the range 
                         from 0 to 32767, correspond to 0-100% of piezo's max voltage.
@@ -176,6 +176,7 @@ class APTDevice_Piezo(APTDevice):
         :param bay: Index (0-based) of controller bay to send the command.
         :param channel: Index (0-based) of controller bay channel to send the command.
         """
+
         voltageOut=int(32767*(voltage/self.maxVoltage))
         self._log.debug(f"Sets output voltage {voltage} on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
         self._loop.call_soon_threadsafe(self._write, apt.pz_set_outputvolts(source=EndPoint.HOST, dest=self.bays[bay], chan_ident=self.channels[channel], voltage=voltageOut))
@@ -197,7 +198,7 @@ class APTDevice_Piezo(APTDevice):
         self.message_event.wait(timeout=timeout)
         self.message_event.clear()
         
-        return self.voltage
+        return self.voltage/32767*self.maxVoltage
 
 
 
@@ -419,8 +420,10 @@ piezo1=APTDevice_Piezo(deviceID="31808608",status_updates="none")
 #         print(piezo1.get_voltage())
 #         time.sleep(0.1)
 
-
-piezo1.set_voltage(voltage=50)
+print(piezo1.get_controlMode())
+piezo1.set_controlMode(mode=1)
+time.sleep(1)
+piezo1.set_voltage(voltage=75)
 time.sleep(5)
 print(piezo1.get_voltage())
 
