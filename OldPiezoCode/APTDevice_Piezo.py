@@ -91,6 +91,8 @@ class APTDevice_Piezo(APTDevice):
         self.set_zero(channel=1)
         self.set_controlMode(channel=0, mode=1)
         self.set_controlMode(channel=1, mode=1)
+        self.maxTravel=self.get_maxTravel(channel=0)
+        self.get_maxTravel(channel=1)
         
         self.voltage = 0
         self.maxVoltage= 75
@@ -98,6 +100,7 @@ class APTDevice_Piezo(APTDevice):
         self.state = False
         self.maxTravel = 200
         self.position = 0
+        
         self.serial = deviceID
         self.message_event=threading.Event()
 
@@ -126,6 +129,8 @@ class APTDevice_Piezo(APTDevice):
                             break
                         else:
                             piezo.close()
+                            while(piezo._port.is_open):
+                                time.sleep(0.1)
                             serial_port="NODEVICE"
                     except:
                         print("Device on Port " + serial_port+" is not availabe!")   
@@ -273,7 +278,7 @@ class APTDevice_Piezo(APTDevice):
         #max = self.get_maxTravel()
         # Hardcoded distance for piezo
         # TODO: Automate this part
-        max=200
+        max=20
         positionOut=int(32767.0*position/max)
 
         self._log.debug(f"Sets position {position} on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
@@ -307,7 +312,7 @@ class APTDevice_Piezo(APTDevice):
         self.message_event.wait(timeout=timeout)
         self.message_event.clear()
 
-        return self.position/32767*self.maxTravel
+        return self.position/32767*self.maxTravel/10
     
 
     def get_maxvoltage(self , bay=0, channel=0):
@@ -443,15 +448,15 @@ class APTDevice_Piezo(APTDevice):
 #         comPort = p.name
 # #31xxxxx is the zaxis
 # #0 is xy axes
-piezo1=APTDevice_Piezo.create(deviceID="1",status_updates="none")
+piezo1=APTDevice_Piezo.create(deviceID="31808608",status_updates="none")
 # time.sleep(1)
 # piezo1.set_controlMode(mode=2)
 # time.sleep(1)
 # piezo1.set_position(position=100)
 # time.sleep(1)
 # print(str(piezo1.get_position()))
-time.sleep(3)
-piezo2=APTDevice_Piezo.create(deviceID="31808608",status_updates="none")
+#time.sleep(3)
+piezo2=APTDevice_Piezo.create(deviceID="0",status_updates="none")
 # # piezo1.set_ChannelState(state=1)
 # #piezo1.get_serial()
 # piezo1.set_ChannelState(state=1, channel=1)
