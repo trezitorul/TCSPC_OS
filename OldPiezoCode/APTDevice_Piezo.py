@@ -45,35 +45,39 @@ class APTDevice_Piezo(APTDevice):
     :param status_updates: Set to ``"auto"``, ``"polled"`` or ``"none"``.
     """
 
-    def __init__(self, deviceID=None ,serial_port=None, vid=None, pid=None, manufacturer=None, product=None, serial_number=None, location=None, controller=EndPoint.HOST, bays=(EndPoint.USB,), channels=(1,2), status_updates="polling"):
-        if deviceID!=None:
-            ports = list(serial.tools.list_ports.comports())
-            for p in ports:
-                serial_port="NODEVICE"
-                if "APT" in p.description:
-                    
-                    try:    
-                        serial_port = p.name
-                        piezo=APTDevice_Piezo(serial_port=serial_port,status_updates="auto")
+    def __init__(self,serial_port=None, deviceID=None, vid=None, pid=None, manufacturer=None, product=None, serial_number=None, location=None, controller=EndPoint.HOST, bays=(EndPoint.USB,), channels=(1,2), status_updates="polling", creation=1):
+        #worked = False
+        # serial_port="NODEVICE"
+        # if deviceID!=None and creation != 0:
+        #     print("Attempting to connect")
+        #     ports = list(serial.tools.list_ports.comports())
+        #     for p in ports:
+        #         serial_port="NODEVICE"
+        #         if "APT" in p.description:
+        #             try:    
+        #                 serial_port = p.name
+        #                 piezo=APTDevice_Piezo(serial_port=serial_port,status_updates="auto", creation=0)
 
 
-                        if piezo.get_serial()==deviceID:
-                            print("Connecting to Device " + deviceID + " on Port: " + serial_port)
-                            piezo.close()
-                            time.sleep(5)
-                            break
-                        else:
-                            piezo.close()
-                            time.sleep(5)
-                            serial_port="NODEVICE"
-                    except:
-                        print("Device on Port " + serial_port+" is not availabe!")
-        if serial_port=="NODEVICE":
-            print("NO DEVICE WITH ID " + deviceID)
+        #                 if piezo.get_serial()==deviceID:
+        #                     print("Connecting to Device " + deviceID + " on Port: " + serial_port)
+        #                     worked = True
+        #                     # piezo.close()
+        #                     # time.sleep(5)
+        #                     break
+        #                 else:
+        #                     piezo.close()
+        #                     serial_port="NODEVICE"
+        #             except:
+        #                 print("Device on Port " + serial_port+" is not availabe!")              
+        
+        # if serial_port=="NODEVICE":
+        #     print("NO DEVICE WITH ID " + deviceID)
 
+        #if not worked and serial_port != "NODEVICE":
         super().__init__(serial_port=serial_port, vid=vid, pid=pid, manufacturer=manufacturer, product=product, serial_number=serial_number, location=location, controller=controller, bays=bays, channels=channels, status_updates=status_updates)
-
-
+        
+        
         #GET TPZ_IOSETTINGS to set max voltage for stage.
         self.keepalive_message=apt.pz_ack_pzstatusupdate
         self.update_message=apt.pz_req_pzstatusupdate
@@ -92,10 +96,44 @@ class APTDevice_Piezo(APTDevice):
         self.maxVoltage= 75
         self.mode = 0
         self.state = False
-        self.maxTravel = 0
+        self.maxTravel = 200
         self.position = 0
         self.serial = deviceID
         self.message_event=threading.Event()
+
+        # if deviceID != None:
+        #     return piezo
+
+    @classmethod
+    def create(cls, deviceID=None, status_updates="polling"):
+        #worked = False
+        if deviceID!=None:
+            print("Attempting to connect")
+            ports = list(serial.tools.list_ports.comports())
+            for p in ports:
+                serial_port="NODEVICE"
+                if "APT" in p.description:
+                    try:    
+                        serial_port = p.name
+                        piezo=APTDevice_Piezo(serial_port=serial_port,status_updates="auto", creation=0)
+
+
+                        if piezo.get_serial()==deviceID:
+                            print("Connecting to Device " + deviceID + " on Port: " + serial_port)
+                            #worked = True
+                            # piezo.close()
+                            # time.sleep(5)
+                            break
+                        else:
+                            piezo.close()
+                            serial_port="NODEVICE"
+                    except:
+                        print("Device on Port " + serial_port+" is not availabe!")   
+            if serial_port=="NODEVICE":
+                print("NO DEVICE WITH ID " + deviceID)
+            else:
+                return piezo           
+
     
 
     def get_ChannelState(self, bay=0, channel=0, timeout=10):
@@ -225,17 +263,17 @@ class APTDevice_Piezo(APTDevice):
         """
         Set the position of the piezo.
         ONLY WORKS IN CLOSED LOOP MODE
+        Units: microns
 
         :param position: Output position relative to zero position; sets as an integer in the range 
                          from 0 to 32767, correspond to 0-100% of piezo extension aka maxTravel.
-        :param now: Set piezo position immediately, or wait for subsequent trigger.
         :param bay: Index (0-based) of controller bay to send the command.
         :param channel: Index (0-based) of controller bay channel to send the command.
         """
         #max = self.get_maxTravel()
         # Hardcoded distance for piezo
         # TODO: Automate this part
-        max=20
+        max=200
         positionOut=int(32767.0*position/max)
 
         self._log.debug(f"Sets position {position} on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
@@ -269,7 +307,7 @@ class APTDevice_Piezo(APTDevice):
         self.message_event.wait(timeout=timeout)
         self.message_event.clear()
 
-        return self.position
+        return self.position/32767*self.maxTravel
     
 
     def get_maxvoltage(self , bay=0, channel=0):
@@ -405,8 +443,15 @@ class APTDevice_Piezo(APTDevice):
 #         comPort = p.name
 # #31xxxxx is the zaxis
 # #0 is xy axes
-piezo1=APTDevice_Piezo(deviceID="31808608",status_updates="none")
-# #piezo1=APTDevice_Piezo(deviceID="0",status_updates="none")
+piezo1=APTDevice_Piezo.create(deviceID="1",status_updates="none")
+# time.sleep(1)
+# piezo1.set_controlMode(mode=2)
+# time.sleep(1)
+# piezo1.set_position(position=100)
+# time.sleep(1)
+# print(str(piezo1.get_position()))
+time.sleep(3)
+piezo2=APTDevice_Piezo.create(deviceID="31808608",status_updates="none")
 # # piezo1.set_ChannelState(state=1)
 # #piezo1.get_serial()
 # piezo1.set_ChannelState(state=1, channel=1)
@@ -422,9 +467,9 @@ piezo1=APTDevice_Piezo(deviceID="31808608",status_updates="none")
 #         time.sleep(0.1)
 
 #Will not work if sleep is too long or too short
-piezo1.set_voltage(voltage=75)
-time.sleep(1)
-print(piezo1.get_voltage())
+# piezo1.set_voltage(voltage=75)
+# time.sleep(1)
+# print(piezo1.get_voltage())
 
 
 # piezo2=APTDevice_Piezo(serial_port="COM8",status_updates="auto")
