@@ -85,6 +85,8 @@ class APTDevice_Piezo(APTDevice):
         self.set_ChannelState(channel=1, state=1)
         self.set_zero(channel=0)
         self.set_zero(channel=1)
+        self.set_controlMode(channel=0, mode=1)
+        self.set_controlMode(channel=1, mode=1)
         
         self.voltage = 0
         self.maxVoltage= 75
@@ -143,8 +145,7 @@ class APTDevice_Piezo(APTDevice):
         :param channel: Index (0-based) of controller bay channel to send the command.
         """
 
-        print("Set Mode to " + str(mode))
-        self._log.debug(f"Get Channel {channel} mode on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
+        self._log.debug(f"Set Channel {channel} mode to {mode} on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
         self._loop.call_soon_threadsafe(self._write, apt.pz_set_positioncontrolmode(source=EndPoint.HOST, dest=EndPoint.USB, chan_ident=self.channels[channel], mode=mode))
     
 
@@ -420,11 +421,9 @@ piezo1=APTDevice_Piezo(deviceID="31808608",status_updates="none")
 #         print(piezo1.get_voltage())
 #         time.sleep(0.1)
 
-print(piezo1.get_controlMode())
-piezo1.set_controlMode(mode=1)
-time.sleep(1)
+#Will not work if sleep is too long or too short
 piezo1.set_voltage(voltage=75)
-time.sleep(5)
+time.sleep(1)
 print(piezo1.get_voltage())
 
 
