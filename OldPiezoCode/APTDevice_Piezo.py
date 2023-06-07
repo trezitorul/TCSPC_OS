@@ -45,39 +45,14 @@ class APTDevice_Piezo(APTDevice):
     :param status_updates: Set to ``"auto"``, ``"polled"`` or ``"none"``.
     """
 
-    def __init__(self,serial_port=None, deviceID=None, vid=None, pid=None, manufacturer=None, product=None, serial_number=None, location=None, controller=EndPoint.HOST, bays=(EndPoint.USB,), channels=(1,2), status_updates="polling", creation=1):
-        #worked = False
-        # serial_port="NODEVICE"
-        # if deviceID!=None and creation != 0:
-        #     print("Attempting to connect")
-        #     ports = list(serial.tools.list_ports.comports())
-        #     for p in ports:
-        #         serial_port="NODEVICE"
-        #         if "APT" in p.description:
-        #             try:    
-        #                 serial_port = p.name
-        #                 piezo=APTDevice_Piezo(serial_port=serial_port,status_updates="auto", creation=0)
-
-
-        #                 if piezo.get_serial()==deviceID:
-        #                     print("Connecting to Device " + deviceID + " on Port: " + serial_port)
-        #                     worked = True
-        #                     # piezo.close()
-        #                     # time.sleep(5)
-        #                     break
-        #                 else:
-        #                     piezo.close()
-        #                     serial_port="NODEVICE"
-        #             except:
-        #                 print("Device on Port " + serial_port+" is not availabe!")              
+    def __init__(self,serial_port=None, vid=None, pid=None, manufacturer=None, product=None, serial_number=None, 
+                 location=None, controller=EndPoint.HOST, bays=(EndPoint.USB,), channels=(1,2), status_updates="polling"):
         
-        # if serial_port=="NODEVICE":
-        #     print("NO DEVICE WITH ID " + deviceID)
+        super().__init__(serial_port=serial_port, vid=vid, pid=pid, manufacturer=manufacturer, product=product, serial_number=serial_number, 
+                         location=location, controller=controller, bays=bays, channels=channels, status_updates=status_updates)
+        
+        self.message_event=threading.Event()
 
-        #if not worked and serial_port != "NODEVICE":
-        super().__init__(serial_port=serial_port, vid=vid, pid=pid, manufacturer=manufacturer, product=product, serial_number=serial_number, location=location, controller=controller, bays=bays, channels=channels, status_updates=status_updates)
-        
-        
         #GET TPZ_IOSETTINGS to set max voltage for stage.
         self.keepalive_message=apt.pz_ack_pzstatusupdate
         self.update_message=apt.pz_req_pzstatusupdate
@@ -85,31 +60,38 @@ class APTDevice_Piezo(APTDevice):
             for channel in self.channels:
                 self._loop.call_soon_threadsafe(self._write, apt.pz_req_tpz_iosettings(source=EndPoint.HOST, dest=bay, chan_ident=channel))
         
-        self.set_ChannelState(channel=0, state=1)
-        self.set_ChannelState(channel=1, state=1)
-        self.set_zero(channel=0)
-        self.set_zero(channel=1)
-        self.set_controlMode(channel=0, mode=1)
-        self.set_controlMode(channel=1, mode=1)
-        self.maxTravel=self.get_maxTravel(channel=0)
-        self.get_maxTravel(channel=1)
-        
-        self.voltage = 0
-        self.maxVoltage= 75
-        self.mode = 0
-        self.state = False
-        self.maxTravel = 200
-        self.position = 0
-        
-        self.serial = deviceID
-        self.message_event=threading.Event()
+        self.info = []
+        for channel in channels:
+            self.info.append({"channel": channel, "serial_number": serial_number, "voltage": 0, "maxVoltage": 75, "mode": 2, "state": 1, 
+                              "maxTravel": 0, "position": 0})
 
-        # if deviceID != None:
-        #     return piezo
+            self.set_ChannelState(channel=channel-1, state=1)
+            self.set_zero(channel=channel-1)
+            self.set_controlMode(channel=channel-1, mode=2)
+            # None
+        
+        #  = self.get_serial
+
+        for channel in channels:
+            maxTravel = self.get_maxTravel(channel=channel-1)
+            self.info[channel-1]["maxTravel"] = maxTravel
+        
+        # self.maxTravel=self.get_maxTravel(channel=0)
+        # self.get_maxTravel(channel=1)
+        
+        # self.voltage = 0
+        # self.maxVoltage= 75
+        # self.mode = 0
+        # self.state = False
+        # self.maxTravel = 200
+        # self.position = 0
+
+        # self.serial = deviceID
+
 
     @classmethod
-    def create(cls, deviceID=None, status_updates="polling"):
-        #worked = False
+    def create(cls, serial_port=None, deviceID=None, vid=None, pid=None, manufacturer=None, product=None, serial_number=None, 
+                 location=None, controller=EndPoint.HOST, bays=(EndPoint.USB,), channels=(1,2), status_updates="polling"):
         if deviceID!=None:
             print("Attempting to connect")
             ports = list(serial.tools.list_ports.comports())
@@ -118,19 +100,20 @@ class APTDevice_Piezo(APTDevice):
                 if "APT" in p.description:
                     try:    
                         serial_port = p.name
-                        piezo=APTDevice_Piezo(serial_port=serial_port,status_updates="auto", creation=0)
-
-
+                        piezo=APTDevice_Piezo(serial_port=serial_port, vid=vid, pid=pid, manufacturer=manufacturer, product=product, 
+                                              serial_number=serial_number, location=location, controller=controller, bays=bays, channels=channels, 
+                                              status_updates=status_updates)
                         if piezo.get_serial()==deviceID:
                             print("Connecting to Device " + deviceID + " on Port: " + serial_port)
-                            #worked = True
-                            # piezo.close()
-                            # time.sleep(5)
+                            
+                            for channel in channels:
+                                piezo.info[channel-1]["serial_number"] = deviceID
+
                             break
                         else:
                             piezo.close()
                             while(piezo._port.is_open):
-                                time.sleep(0.1)
+                                time.sleep(1)
                             serial_port="NODEVICE"
                     except:
                         print("Device on Port " + serial_port+" is not availabe!")   
@@ -145,9 +128,9 @@ class APTDevice_Piezo(APTDevice):
         """
         Get the current channel state. 
 
-        :param now: Get the channel state immediately, or wait for subsequent trigger.
         :param bay: Index (0-based) of controller bay to send the command.
         :param channel: Index (0-based) of controller bay channel to send the command.
+        :param timeout: maximum delay for event to happpen
         """
 
         self._log.debug(f"Get Channel {channel} state on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
@@ -156,7 +139,7 @@ class APTDevice_Piezo(APTDevice):
         self.message_event.wait(timeout=timeout)
         self.message_event.clear()
 
-        return self.state
+        return self.info[channel]["state"]
 
 
     def set_ChannelState(self, bay=0, channel=0, state=1):
@@ -164,13 +147,17 @@ class APTDevice_Piezo(APTDevice):
         Set the channel state. 
 
         :param state: state of the piezo's state. (1: Enabled; 2: Disabled)
-        :param now: Perform state change immediately, or wait for subsequent trigger.
         :param bay: Index (0-based) of controller bay to send the command.
         :param channel: Index (0-based) of controller bay channel to send the command.
         """
         
+        if (state != 1 and state != 2):
+            raise ValueError("ENABLED : 1; DISABLED: 2")
+
         self._log.debug(f"Get Channel {channel} state on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
         self._loop.call_soon_threadsafe(self._write, apt.mod_set_chanenablestate(source=EndPoint.HOST, dest=EndPoint.USB, chan_ident=self.channels[channel], enable_state=state))
+
+        self.info[channel]["state"] = state
     
 
 
@@ -183,20 +170,25 @@ class APTDevice_Piezo(APTDevice):
         0x04 Closed Loop Smooth
 
         :param mode: Mode of the piezo
-        :param now: Set control mode immediately, or wait for subsequent trigger.
         :param bay: Index (0-based) of controller bay to send the command.
         :param channel: Index (0-based) of controller bay channel to send the command.
         """
+        if (mode < 0x01 or mode > 0x04):
+            raise ValueError("CONTROL MODE MUST BE 0x01, 0x02, 0x03, or 0x04")
 
         self._log.debug(f"Set Channel {channel} mode to {mode} on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
         self._loop.call_soon_threadsafe(self._write, apt.pz_set_positioncontrolmode(source=EndPoint.HOST, dest=EndPoint.USB, chan_ident=self.channels[channel], mode=mode))
+        self.info[channel]["mode"] = mode
     
 
     def get_controlMode(self, bay=0, channel=0, timeout=10):
         """
         Get current control mode. 
+        0x01 Open Loop (no feedback)
+        0x02 Closed Loop (feedback employed)
+        0x03 Open Loop Smooth
+        0x04 Closed Loop Smooth
 
-        :param now: Get current mode immediately, or wait for subsequent trigger.
         :param bay: Index (0-based) of controller bay to send the command.
         :param channel: Index (0-based) of controller bay channel to send the command.
         """
@@ -207,7 +199,7 @@ class APTDevice_Piezo(APTDevice):
         self.message_event.wait(timeout=timeout)
         self.message_event.clear()
 
-        return self.mode
+        return self.info[channel]["mode"]
 
 
     def set_voltage(self, voltage=None, bay=0, channel=0):
@@ -216,14 +208,28 @@ class APTDevice_Piezo(APTDevice):
 
         :param voltage: Set current voltage as an integer in the range 
                         from 0 to 32767, correspond to 0-100% of piezo's max voltage.
-        :param now: Perform voltage change immediately, or wait for subsequent trigger.
         :param bay: Index (0-based) of controller bay to send the command.
         :param channel: Index (0-based) of controller bay channel to send the command.
         """
 
-        voltageOut=int(32767*(voltage/self.maxVoltage))
+        currMode = self.info[channel]["mode"]
+
+        if (currMode != 0x01 and currMode != 0x03):
+            raise ValueError("MUST BE IN OPEN LOOP MODE")
+
+        if (voltage == None):
+            raise ValueError("PLEASE INPUT VOLTAGE")
+        
+        # if (voltage)
+
+        currMax = self.info[channel]["maxVoltage"]
+        voltageOut=int(32767*(voltage/currMax))
+
         self._log.debug(f"Sets output voltage {voltage} on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
         self._loop.call_soon_threadsafe(self._write, apt.pz_set_outputvolts(source=EndPoint.HOST, dest=self.bays[bay], chan_ident=self.channels[channel], voltage=voltageOut))
+
+        self.info[channel]["voltage"] = voltage
+    
 
     def get_voltage(self, bay=0, channel=0, timeout=10):
         """
@@ -231,7 +237,6 @@ class APTDevice_Piezo(APTDevice):
 
         :param voltage: Get current voltage as an integer in the range 
                         from 0 to 32767, correspond to 0-100% of piezo's max voltage.
-        :param now: Get current voltage immediately, or wait for subsequent trigger.
         :param bay: Index (0-based) of controller bay to send the command.
         :param channel: Index (0-based) of controller bay channel to send the command.
         """
@@ -241,17 +246,17 @@ class APTDevice_Piezo(APTDevice):
 
         self.message_event.wait(timeout=timeout)
         self.message_event.clear()
+
+        voltage = self.info[channel]["voltage"]
+        maxVoltage = self.info[channel]["maxVoltage"]
         
-        return self.voltage/32767*self.maxVoltage
-
-
+        return voltage/32767*maxVoltage
 
 
     def get_maxTravel(self, bay=0, channel=0, timeout=10):
         """
         Get maximum travel distance.
 
-        :param now: Get max travel distance immediately, or wait for subsequent trigger.
         :param bay: Index (0-based) of controller bay to send the command.
         :param channel: Index (0-based) of controller bay channel to send the command.
         """
@@ -261,7 +266,7 @@ class APTDevice_Piezo(APTDevice):
         self.message_event.wait(timeout=timeout)
         self.message_event.clear()
 
-        return self.maxTravel
+        return self.info[channel]["maxTravel"]
 
 
     def set_position(self, position=None , bay=0, channel=0):
@@ -275,26 +280,25 @@ class APTDevice_Piezo(APTDevice):
         :param bay: Index (0-based) of controller bay to send the command.
         :param channel: Index (0-based) of controller bay channel to send the command.
         """
-        #max = self.get_maxTravel()
-        # Hardcoded distance for piezo
-        # TODO: Automate this part
-        max=20
-        positionOut=int(32767.0*position/max)
+
+        if (position == None):
+            raise ValueError("MISSING INPUT FOR POSITION")
+        
+        if (position < 0):
+            raise ValueError("POSITION MUST BE POSITIVE")
+        
+        currMode = self.info[channel]["mode"]
+
+        if (currMode != 0x02 and currMode != 0x04):
+            raise ValueError("MUST BE IN CLOSED LOOP MODE")
+
+        max = self.info[channel]["maxTravel"]
+        positionOut=int((32767.0*position/max) * 10)
 
         self._log.debug(f"Sets position {position} on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
         self._loop.call_soon_threadsafe(self._write, apt.pz_set_outputpos(source=EndPoint.HOST, dest=self.bays[bay], chan_ident=self.channels[channel], position=positionOut))
-    
 
-    def set_zero(self , bay=0, channel=0):
-        """
-        Reads current position, and use that as reference for position 0.
-
-        :param now: Sets 0 immediately immediately, or wait for subsequent trigger.
-        :param bay: Index (0-based) of controller bay to send the command.
-        :param channel: Index (0-based) of controller bay channel to send the command.
-        """
-        self._log.debug(f"Zero on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
-        self._loop.call_soon_threadsafe(self._write, apt.pz_set_zero(source=EndPoint.HOST, dest=self.bays[bay], chan_ident=self.channels[channel]))
+        self.info[channel]["position"] = position
 
 
     def get_position(self , bay=0, channel=0, timeout=10):
@@ -302,25 +306,43 @@ class APTDevice_Piezo(APTDevice):
         Get position of the piezo as an integer in the range from 0 to 32767, correspond 
         to 0-100% of piezo extension aka maxTravel.
 
-        :param now: Get current position immediately, or wait for subsequent trigger.
         :param bay: Index (0-based) of controller bay to send the command.
         :param channel: Index (0-based) of controller bay channel to send the command.
         """
+
+        currMode = self.info[channel]["mode"]
+
+        if (currMode != 0x02 and currMode != 0x04):
+            raise ValueError("MUST BE IN CLOSED LOOP MODE")
+
         self._log.debug(f"Sets position on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
         self._loop.call_soon_threadsafe(self._write, apt.pz_req_outputpos(source=EndPoint.HOST, dest=self.bays[bay], chan_ident=self.channels[channel]))
 
         self.message_event.wait(timeout=timeout)
         self.message_event.clear()
 
-        return self.position/32767*self.maxTravel/10
+        position = self.info[channel]["position"]
+        maxTravel = self.info[channel]["maxTravel"]
+
+        return position/32767*maxTravel/10
+
+
+    def set_zero(self , bay=0, channel=0):
+        """
+        Reads current position, and use that as reference for position 0.
+
+        :param bay: Index (0-based) of controller bay to send the command.
+        :param channel: Index (0-based) of controller bay channel to send the command.
+        """
+        self._log.debug(f"Zero on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
+        self._loop.call_soon_threadsafe(self._write, apt.pz_set_zero(source=EndPoint.HOST, dest=self.bays[bay], chan_ident=self.channels[channel]))
     
 
     def get_maxvoltage(self , bay=0, channel=0):
         """
         Get max voltage.
+        NOT WORKING
 
-        :param position: Movement destination in encoder steps.
-        :param now: Perform movement immediately, or wait for subsequent trigger.
         :param bay: Index (0-based) of controller bay to send the command.
         :param channel: Index (0-based) of controller bay channel to send the command.
         """    
@@ -330,6 +352,25 @@ class APTDevice_Piezo(APTDevice):
         # self._log.debug(f"Gets max voltage on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
         # self._loop.call_soon_threadsafe(self._write, apt.pz_req_outputmaxvolts(source=EndPoint.HOST, dest=self.bays[bay], chan_ident=self.channels[channel]))
         return 75
+
+
+    def set_maxvoltage(self, voltage=None , bay=0, channel=0):
+        """
+        Set max voltage.
+        NOT WORKING
+
+        :param voltage: Max voltage to set.
+        :param bay: Index (0-based) of controller bay to send the command.
+        :param channel: Index (0-based) of controller bay channel to send the command.
+        """
+        # max_voltage=75
+        # voltageOut=int(32767*(voltage/max_voltage))
+        #print("Outputing Voltage")
+        self._log.debug(f"Sets output voltage {voltage} on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
+        print(apt.pz_set_outputmaxvolts(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], voltage=voltage))
+        self._loop.call_soon_threadsafe(self._write, apt.pz_set_outputmaxvolts(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], voltage=voltage))
+
+        self.info[channel]["maxVoltage"] = voltage
 
 
     def get_serial(self, bay=0, timeout=10):
@@ -344,42 +385,7 @@ class APTDevice_Piezo(APTDevice):
         self.message_event.wait(timeout=timeout)
         self.message_event.clear()
 
-        return str(self.serial)
-
-
-    def connect_device(self, deviceID):
-        """
-        Connect to piezo using serial number.
-
-        :param deviceID: device serial number.
-        """    
-        ports = list(serial.tools.list_ports.comports())
-        for p in ports:
-            if "APT" in p.description:
-                comPort = p.name
-                piezo=APTDevice_Piezo(serial_port=comPort,status_updates="auto")
-                if piezo.get_serial()==deviceID:
-                    return comPort
-                else:
-                    piezo.close()
-        return None
-
-
-    def set_maxvoltage(self, voltage=None , bay=0, channel=0):
-        """
-        Set max voltage.
-
-        :param position: Movement destination in encoder steps.
-        :param now: Perform movement immediately, or wait for subsequent trigger.
-        :param bay: Index (0-based) of controller bay to send the command.
-        :param channel: Index (0-based) of controller bay channel to send the command.
-        """
-        # max_voltage=75
-        # voltageOut=int(32767*(voltage/max_voltage))
-        #print("Outputing Voltage")
-        self._log.debug(f"Sets output voltage {voltage} on [bay={self.bays[bay]:#x}, channel={self.channels[channel]}].")
-        print(apt.pz_set_outputmaxvolts(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], voltage=voltage))
-        self._loop.call_soon_threadsafe(self._write, apt.pz_set_outputmaxvolts(source=EndPoint.USB, dest=self.bays[bay], chan_ident=self.channels[channel], voltage=voltage))
+        return str(self.info[0]["serial_number"])
 
 
     def _process_message(self, m):
@@ -409,29 +415,36 @@ class APTDevice_Piezo(APTDevice):
                     self._log.warn(f"Message {m.msg} has unrecognised channel={m.chan_ident}.")
                     channel_i = 0
                     #return
+        
         if m.msg == "pz_get_outputvolts":
-            self.voltage=m.voltage
+            # self.voltage=m.voltage
+            self.info[m.chan_ident-1]["voltage"] = m.voltage
             self.message_event.set()
 
         # Act on each message type
         elif m.msg == "pz_get_maxtravel":
-            self.maxTravel = m.travel
+            # self.maxTravel = m.travel
+            self.info[m.chan_ident-1]["maxTravel"] = m.travel
             self.message_event.set()
             
         elif m.msg == "pz_get_outputpos":
-            self.position = m.position
+            # self.position = m.position
+            self.info[m.chan_ident-1]["position"] = m.position
             self.message_event.set()
 
         elif m.msg=="mod_get_chanenablestate":
             self.state = m.enabled
+            self.info[m.chan_ident-1]["state"] = m.enabled
             self.message_event.set()
             
         elif m.msg=="pz_get_positioncontrolmode":
-            self.mode = m.mode
+            # self.mode = m.mode
+            self.info[m.chan_ident-1]["mode"] = m.mode
             self.message_event.set()
 
         elif m.msg=="hw_get_info":
-            self.serial = m.serial_number
+            # self.serial = m.serial_number
+            self.info[0]["serial_number"] = m.serial_number
             self.message_event.set()
             
         else:
@@ -441,22 +454,17 @@ class APTDevice_Piezo(APTDevice):
 
 
 #logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-# Auto connect to COM port
-# ports = list(serial.tools.list_ports.comports())
-# for p in ports:
-#     if "APT" in p.description:
-#         comPort = p.name
 # #31xxxxx is the zaxis
 # #0 is xy axes
-piezo1=APTDevice_Piezo.create(deviceID="31808608",status_updates="none")
-# time.sleep(1)
-# piezo1.set_controlMode(mode=2)
-# time.sleep(1)
-# piezo1.set_position(position=100)
-# time.sleep(1)
-# print(str(piezo1.get_position()))
-#time.sleep(3)
-piezo2=APTDevice_Piezo.create(deviceID="0",status_updates="none")
+piezo1=APTDevice_Piezo.create(deviceID="0",status_updates="none")
+time.sleep(1)
+piezo1.set_controlMode(mode=2)
+time.sleep(1)
+piezo1.set_position(position=10)
+time.sleep(1)
+print(str(piezo1.get_position()))
+time.sleep(3)
+piezo2=APTDevice_Piezo.create(deviceID="31808608",status_updates="none")
 # # piezo1.set_ChannelState(state=1)
 # #piezo1.get_serial()
 # piezo1.set_ChannelState(state=1, channel=1)
@@ -516,15 +524,6 @@ piezo2=APTDevice_Piezo.create(deviceID="0",status_updates="none")
 #         time.sleep(0.5)
 #         piezo2.get_position()
 
-# piezo1.get_voltage()
-# piezo1.set_ChannelState(state=1)
-# time.sleep(1)
-# piezo1.get_ChannelState()
-# time.sleep(2)
-# piezo1.set_ChannelState(state=2)
-# piezo1.get_ChannelState()
-# piezo1.set_maxvoltage(voltage=75)
-# piezo1.get_maxvoltage()
 
 # time.sleep(2)
 
@@ -538,10 +537,3 @@ piezo2=APTDevice_Piezo.create(deviceID="0",status_updates="none")
 #             print(70-j*70/100)
 #         piezo1.get_voltage()
 #         time.sleep(0.1)
-
-# piezo1.set_voltage(voltage=75)
-# time.sleep(5)
-# piezo1.get_voltage()
-# time.sleep(5)
-# print(piezo.update_message)
-# piezo.set_voltage(50)
