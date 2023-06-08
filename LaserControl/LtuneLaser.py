@@ -12,7 +12,7 @@ class RGB_Laser:
         
         # ports = list(serial.tools.list_ports.comports())
         # for p in ports:
-        #     if "RGB" in p.description:
+        #     if "+LB" in p.description:
         #         com_port = p.name
         
         # Start serial connection
@@ -26,24 +26,25 @@ class RGB_Laser:
                     )
         
         self.com_port = com_port
-        self.enabled = False
         self.power = 0
-        
-        # Unsure if self.ser works, everything is called with ser.write and wanted to make it accessable
         
         # Initialize laser at connection
         command = 'init\r\n'.encode()
         self.ser.write(bytes(command))
 
-    def laser_enable(self):
+        #Auto enables
+        self.enable()
+
+    def enable(self):
         """
         Enables laser. For safety reasons, the laser takes 5 seconds to turn on.
         """
         command = 'O=1\r\n'.encode()
         self.ser.write(bytes(command))
         self.enabled = True
+        time.sleep(7)
 
-    def laser_disable(self):
+    def disable(self):
         """
         Disables laser.
         """
@@ -51,7 +52,7 @@ class RGB_Laser:
         self.ser.write(bytes(command))
         self.enabled = False
 
-    def end(self):
+    def close(self):
         """
         Closes serial connection.
         """
@@ -75,3 +76,12 @@ class RGB_Laser:
         Returns output power in mW.
         """
         return self.power
+    
+laser=RGB_Laser("COM5")
+laser.enable()
+laser.set_outputPower(5)
+time.sleep(5)
+laser.set_outputPower(10)
+time.sleep(5)
+laser.disable()
+laser.close()
