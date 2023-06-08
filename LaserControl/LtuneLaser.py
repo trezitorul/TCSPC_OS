@@ -11,6 +11,7 @@ class RGB_Laser:
     Open serial connection and initialize RGB Lasersystems device.
 
     :param com_port: com port device is connected to.
+    :param deviceID: serial number of device.
     """
     def __init__(self, com_port=None, deviceID = None):
         
@@ -19,7 +20,7 @@ class RGB_Laser:
             for p in ports:
                 if "LB" in str(p.serial_number):
                     print("1")
-                    if deviceID in p.serial_number:
+                    if deviceID == p.serial_number:
                         com_port = p.name
                         print("2")
                         break
