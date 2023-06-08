@@ -1,6 +1,6 @@
 import serial
 import time
-#import serial.tools.list_ports
+import serial.tools.list_ports
 
 class RGB_Laser:
     """
@@ -8,13 +8,20 @@ class RGB_Laser:
 
     :param com_port: com port device is connected to.
     """
-    def __init__(self, com_port=None):
+    def __init__(self, com_port=None, deviceID = None):
         
-        # ports = list(serial.tools.list_ports.comports())
-        # for p in ports:
-        #     if "+LB" in p.description:
-        #         com_port = p.name
-        
+        if com_port == None:
+            ports = list(serial.tools.list_ports.comports())
+            for p in ports:
+                if "LB" in str(p.serial_number):
+                    print("1")
+                    if deviceID in p.serial_number:
+                        com_port = p.name
+                        print("2")
+                        break
+        if com_port == None:
+            raise ValueError("Device could not be found.")
+
         # Start serial connection
         self.ser = serial.Serial(
                         port = com_port,
@@ -23,7 +30,7 @@ class RGB_Laser:
                         parity = serial.PARITY_NONE,
                         stopbits = serial.STOPBITS_ONE,
                         bytesize = serial.EIGHTBITS
-                    )
+                )
         
         self.com_port = com_port
         self.power = 0
@@ -76,12 +83,9 @@ class RGB_Laser:
         Returns output power in mW.
         """
         return self.power
+
     
-laser=RGB_Laser("COM5")
+laser=RGB_Laser(deviceID = "0000")
 laser.enable()
-laser.set_outputPower(5)
-time.sleep(5)
-laser.set_outputPower(10)
-time.sleep(5)
 laser.disable()
 laser.close()
