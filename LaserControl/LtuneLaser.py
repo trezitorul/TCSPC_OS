@@ -1,6 +1,6 @@
-# Copyright
+# Copyright Alina Stuleanu 2023
 # 
-# RGB Lasersystems implementation, using the company's python integration example.
+# RGB Lasersystems Lambda laser implementation, using the company's python integration example.
 
 import serial
 import time
@@ -8,7 +8,7 @@ import serial.tools.list_ports
 
 class RGB_Laser:
     """
-    Open serial connection and initialize RGB Lasersystems device.
+    Open serial connection and initialize RGB Lasersystems Lambda device.
 
     :param com_port: com port device is connected to.
     :param deviceID: serial number of device.
@@ -18,14 +18,12 @@ class RGB_Laser:
         if com_port == None:
             ports = list(serial.tools.list_ports.comports())
             for p in ports:
-                if "LB" in str(p.serial_number):
-                    print("1")
-                    if deviceID == p.serial_number:
-                        com_port = p.name
-                        print("2")
-                        break
+                if deviceID == p.serial_number:
+                    com_port = p.name
+                    print(f"Connecting to device {deviceID} on port {com_port}")
+                    break
         if com_port == None:
-            raise ValueError("Device could not be found.")
+            raise ValueError(f"Device {deviceID} could not be found.")
 
         # Start serial connection
         self.ser = serial.Serial(
@@ -90,7 +88,7 @@ class RGB_Laser:
         return self.power
 
     
-laser=RGB_Laser(deviceID = "0000")
+laser=RGB_Laser(deviceID = "LB080983A")
 laser.enable()
 laser.disable()
 laser.close()
