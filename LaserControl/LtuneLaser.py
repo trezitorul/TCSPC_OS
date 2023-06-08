@@ -1,5 +1,6 @@
 import serial
 import time
+#import serial.tools.list_ports
 
 class RGB_Laser:
     """
@@ -9,8 +10,12 @@ class RGB_Laser:
     """
     def __init__(self, com_port=None):
         
-        self.com_port = com_port
+        # ports = list(serial.tools.list_ports.comports())
+        # for p in ports:
+        #     if "RGB" in p.description:
+        #         com_port = p.name
         
+        # Start serial connection
         self.ser = serial.Serial(
                         port = com_port,
                         baudrate = 57600,
@@ -20,12 +25,15 @@ class RGB_Laser:
                         bytesize = serial.EIGHTBITS
                     )
         
+        self.com_port = com_port
         self.enabled = False
+        self.power = 0
         
         # Unsure if self.ser works, everything is called with ser.write and wanted to make it accessable
         
-        command = 'init\r\n'.encode() #Initialization command
-        self.ser.write(bytes(command)) #Send command
+        # Initialize laser at connection
+        command = 'init\r\n'.encode()
+        self.ser.write(bytes(command))
 
     def laser_enable(self):
         """
@@ -41,7 +49,7 @@ class RGB_Laser:
         """
         command = 'O=0\r\n'.encode()
         self.ser.write(bytes(command))
-        self.enabled=False
+        self.enabled = False
 
     def end(self):
         """
@@ -49,4 +57,21 @@ class RGB_Laser:
         """
         self.ser.close()
     
-    def outputPower
+    def set_outputPower(self, power):
+        """
+        Sets output power to inputted value in mW.
+
+        :param: power: power to set laser to in mW.
+        """
+        if not self.enabled:
+            raise ValueError("Laser must be enabled to set output power!")
+
+        command = f'P={power}\r\n'.encode()
+        self.ser.write(bytes(command))
+        self.power = power
+    
+    def get_outputPower(self):
+        """
+        Returns output power in mW.
+        """
+        return self.power
