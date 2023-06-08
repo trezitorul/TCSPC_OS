@@ -1,10 +1,14 @@
+# Copyright
+# 
+# RGB Lasersystems implementation, using the company's python integration example.
+
 import serial
 import time
 #import serial.tools.list_ports
 
 class RGB_Laser:
     """
-    RGB Lasersystems implementation, using the company's python integration example.
+    Open serial connection and initialize RGB Lasersystems device.
 
     :param com_port: com port device is connected to.
     """
