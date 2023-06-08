@@ -86,9 +86,3 @@ class RGB_Laser:
         Returns output power in mW.
         """
         return self.power
-
-    
-laser=RGB_Laser(deviceID = "LB080983A")
-laser.enable()
-laser.disable()
-laser.close()
