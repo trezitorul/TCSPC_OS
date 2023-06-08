@@ -1,5 +1,6 @@
 import os.path
-from ctypes import *
+import ctypes
+from ctypes import POINTER, c_int, byref, c_uint, sizeof, c_ubyte, Structure, c_double
 
 import numpy as np
 import time
@@ -25,7 +26,7 @@ class Camera(object):
             self.exposure = None
             self.roi_pos = None
             self.frametime = None
-            self.uc480 = cdll.LoadLibrary(uc480_file)
+            self.uc480 = ctypes.cdll.LoadLibrary(uc480_file)
         else:
             raise CameraOpenError("ThorCam drivers not available.")
 
@@ -187,10 +188,13 @@ class Camera(object):
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt 
-    plt.figure()
     cam = Camera()
+    
+    time.sleep(2)
     cam.open()
+    time.sleep(2)
     cam.set_exposure(1000)
+    time.sleep(2)
     cam.start_continuous_capture(1)
     time.sleep(1)
     # print(cam.bit_depth)
@@ -198,6 +202,8 @@ if __name__ == '__main__':
     cam.stop_live_capture()
     cam.close()
     print(img)
+
+    plt.figure()
     plt.imshow(img)
     plt.colorbar()
     plt.show()

@@ -4,7 +4,7 @@
 
 import serial
 import time
-#import serial.tools.list_ports
+import serial.tools.list_ports
 
 class RGB_Laser:
     """
@@ -12,13 +12,20 @@ class RGB_Laser:
 
     :param com_port: com port device is connected to.
     """
-    def __init__(self, com_port=None):
+    def __init__(self, com_port=None, deviceID = None):
         
-        # ports = list(serial.tools.list_ports.comports())
-        # for p in ports:
-        #     if "RGB" in p.description:
-        #         com_port = p.name
-        
+        if com_port == None:
+            ports = list(serial.tools.list_ports.comports())
+            for p in ports:
+                if "LB" in str(p.serial_number):
+                    print("1")
+                    if deviceID in p.serial_number:
+                        com_port = p.name
+                        print("2")
+                        break
+        if com_port == None:
+            raise ValueError("Device could not be found.")
+
         # Start serial connection
         self.ser = serial.Serial(
                         port = com_port,
@@ -27,27 +34,28 @@ class RGB_Laser:
                         parity = serial.PARITY_NONE,
                         stopbits = serial.STOPBITS_ONE,
                         bytesize = serial.EIGHTBITS
-                    )
+                )
         
         self.com_port = com_port
-        self.enabled = False
         self.power = 0
-        
-        # Unsure if self.ser works, everything is called with ser.write and wanted to make it accessable
         
         # Initialize laser at connection
         command = 'init\r\n'.encode()
         self.ser.write(bytes(command))
 
-    def laser_enable(self):
+        #Auto enables
+        self.enable()
+
+    def enable(self):
         """
         Enables laser. For safety reasons, the laser takes 5 seconds to turn on.
         """
         command = 'O=1\r\n'.encode()
         self.ser.write(bytes(command))
         self.enabled = True
+        time.sleep(7)
 
-    def laser_disable(self):
+    def disable(self):
         """
         Disables laser.
         """
@@ -55,7 +63,7 @@ class RGB_Laser:
         self.ser.write(bytes(command))
         self.enabled = False
 
-    def end(self):
+    def close(self):
         """
         Closes serial connection.
         """
@@ -79,3 +87,9 @@ class RGB_Laser:
         Returns output power in mW.
         """
         return self.power
+
+    
+laser=RGB_Laser(deviceID = "0000")
+laser.enable()
+laser.disable()
+laser.close()

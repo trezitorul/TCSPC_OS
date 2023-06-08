@@ -21,14 +21,17 @@ ser= serial.Serial(
                     )
 
 # send initialisation command
+print("init")
 command = 'init\r\n'.encode()
 ser.write(bytes(command))
-
+#time.sleep(5)
 # send command to set output power to 1mW
-command = 'P=1\r\n'.encode()
+print("5mw")
+command = 'P=5\r\n'.encode()
 ser.write(bytes(command))
-
+#time.sleep(5)
 # send enable command (for safety reasons the laser is turned on after 5 seconds. compare  "21 CFR 1040")
+print("enable")
 command = 'O=1\r\n'.encode()
 ser.write(bytes(command))
 
@@ -36,7 +39,8 @@ ser.write(bytes(command))
 time.sleep(7)
 
 # send command to set output power to 2mW
-command = 'P=2\r\n'.encode()
+print("50")
+command = 'P=50\r\n'.encode()
 ser.write(bytes(command))
 
 # wait for 2 seconds (2 seconds emission)
