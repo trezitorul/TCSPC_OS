@@ -6,7 +6,6 @@ class RGB_Laser:
     RGB Lasersystems implementation, using the company's python integration example.
 
     :param com_port: com port device is connected to.
-    
     """
     def __init__(self, com_port=None):
         
@@ -29,11 +28,25 @@ class RGB_Laser:
         self.ser.write(bytes(command)) #Send command
 
     def laser_enable(self):
+        """
+        Enables laser. For safety reasons, the laser takes 5 seconds to turn on.
+        """
         command = 'O=1\r\n'.encode()
         self.ser.write(bytes(command))
         self.enabled = True
 
     def laser_disable(self):
+        """
+        Disables laser.
+        """
         command = 'O=0\r\n'.encode()
         self.ser.write(bytes(command))
         self.enabled=False
+
+    def end(self):
+        """
+        Closes serial connection.
+        """
+        self.ser.close()
+    
+    def outputPower
