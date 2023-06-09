@@ -14,11 +14,14 @@ class RGB_Laser:
     :param deviceID: serial number of device.
     """
     def __init__(self, com_port=None, deviceID = None):
-        
         if com_port == None:
+            if len(deviceID)<5: 
+                raise ValueError(f"Device {deviceID} is incorrect length")
             ports = list(serial.tools.list_ports.comports())
             for p in ports:
-                if deviceID == p.serial_number:
+                serialNum = str(p.serial_number)
+                serialNum = ''.join([char for char in serialNum if not char.isalpha()])
+                if deviceID == serialNum:
                     com_port = p.name
                     print(f"Connecting to device {deviceID} on port {com_port}")
                     break
@@ -88,7 +91,7 @@ class RGB_Laser:
         return self.power
 
     
-laser=RGB_Laser(deviceID = "LB080983A")
+laser=RGB_Laser(deviceID = "080983")
 laser.enable()
 laser.disable()
 laser.close()
