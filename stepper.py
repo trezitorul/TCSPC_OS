@@ -1,3 +1,8 @@
+# Go to Arduino IDE
+# Go to Files->Examples->Firmata->StandardFirmata
+# Upload this example files
+# Run this python script
+
 import pyfirmata
 import time
 import datetime
