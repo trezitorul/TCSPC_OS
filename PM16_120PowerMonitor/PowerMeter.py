@@ -58,7 +58,7 @@ class PowerMeter:
         # 0 -> Watt
         # 1 -> dBm
         self.tlPM.setPowerUnit(c_int16(powerUnit))
-    
+
     def getMeasurement(self):
         #Returns current power measurement
         power =  c_double()
